@@ -1,0 +1,1 @@
+git@github.com:keboola/component-zendesk.git
