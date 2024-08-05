@@ -14,6 +14,9 @@ from configuration import Configuration
 
 from dlt_zendesk_client import zendesk_support
 
+DLT_TMP_DIR = "/tmp/.dlt"
+DUCKDB_TMP_DIR = "/tmp/.dlt"
+
 
 class Component(ComponentBase):
     """
@@ -41,9 +44,8 @@ class Component(ComponentBase):
         # check for missing configuration parameters
         params = Configuration(**self.configuration.parameters)
 
-        dlt_tmp_dir = "/tmp/.dlt"
-        os.makedirs(dlt_tmp_dir, exist_ok=True)
-        os.environ["RUNTIME__DLT_DATA_DIR"] = dlt_tmp_dir
+        os.makedirs(DLT_TMP_DIR, exist_ok=True)
+        os.environ["DLT_DATA_DIR"] = DLT_TMP_DIR
         os.environ["RUNTIME__DLTHUB_TELEMETRY"] = "false"
         os.environ["RUNTIME__LOG_LEVEL"] = "DEBUG" if params.debug else "INFO"
         os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = params.sub_domain
@@ -52,7 +54,8 @@ class Component(ComponentBase):
 
         self.dataset_name = "zendesk_data"
         self.pipeline_name = "dlt_zendesk_pipeline"
-        self.pipeline_destination = dlt.destinations.duckdb(f"./{self.pipeline_name}.duckdb")
+        os.makedirs(DUCKDB_TMP_DIR, exist_ok=True)
+        self.pipeline_destination = dlt.destinations.duckdb(f"{DUCKDB_TMP_DIR}/{self.pipeline_name}.duckdb")
 
         start = time.time()
         pipeline = self.run_zendesk_pipeline()
