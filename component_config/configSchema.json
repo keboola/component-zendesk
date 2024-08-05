@@ -1,19 +1,31 @@
 {
-  "type": "object",
-  "title": "extractor configuration",
-  "required": [
-    "print_hello"
-  ],
-  "properties": {
-    "print_hello": {
-      "type": "boolean",
-      "title": "Print Hello",
-      "propertyOrder": 1
-    },
-    "debug": {
-      "type": "boolean",
-      "title": "Debug",
-      "propertyOrder": 2
+    "type": "object",
+    "title": "extractor configuration",
+    "required": [
+        "email",
+        "api_token",
+        "sub_domain"
+    ],
+    "properties": {
+        "email": {
+            "type": "string",
+            "title": "Email",
+            "propertyOrder": 1
+        },
+        "api_token": {
+            "type": "string",
+            "title": "API token",
+            "propertyOrder": 2
+        },
+        "sub_domain": {
+            "type": "string",
+            "title": "Sub domain",
+            "propertyOrder": 3
+        },
+        "debug": {
+            "type": "boolean",
+            "title": "Debug",
+            "propertyOrder": 4
+        }
     }
-  }
 }

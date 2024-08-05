@@ -1,15 +1,18 @@
-"""
-Template Component main class.
-
-"""
-import csv
-from datetime import datetime
+import os
+import time
 import logging
+from collections import OrderedDict
+from typing import Any, Union
 
+import dlt
+from duckdb import duckdb
 from keboola.component.base import ComponentBase
+from keboola.component.dao import ColumnDefinition, BaseType, SupportedDataTypes
 from keboola.component.exceptions import UserException
 
 from configuration import Configuration
+
+from dlt_zendesk_client import zendesk_support
 
 
 class Component(ComponentBase):
@@ -25,63 +28,107 @@ class Component(ComponentBase):
 
     def __init__(self):
         super().__init__()
+        self.pipeline_destination = None
+        self.connection = None
+        self.pipeline_name = None
+        self.dataset_name = None
 
     def run(self):
         """
         Main execution code
         """
 
-        # ####### EXAMPLE TO REMOVE
+        # TODO dlt --disable-telemetry
+        #
         # check for missing configuration parameters
         params = Configuration(**self.configuration.parameters)
 
-        # Access parameters in configuration
-        if params.print_hello:
-            logging.info("Hello World")
+        os.environ["RUNTIME__LOG_LEVEL"] = "DEBUG" if params.debug else "INFO"
+        os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = params.sub_domain
+        os.environ["SOURCES__CREDENTIALS__EMAIL"] = params.email
+        os.environ["SOURCES__CREDENTIALS__TOKEN"] = params.api_token
 
-        # get input table definitions
-        input_tables = self.get_input_tables_definitions()
-        for table in input_tables:
-            logging.info(f'Received input table: {table.name} with path: {table.full_path}')
+        self.dataset_name = "zendesk_data"
+        self.pipeline_name = "dlt_zendesk_pipeline"
+        self.pipeline_destination = dlt.destinations.duckdb(f"./{self.pipeline_name}.duckdb")
 
-        if len(input_tables) == 0:
-            raise UserException("No input tables found")
+        start = time.time()
+        pipeline = self.run_zendesk_pipeline()
+        end = time.time()
+        print(f"Time taken: {end - start}")
+        pipeline.raise_on_failed_jobs()
 
-        # get last state data/in/state.json from previous run
-        previous_state = self.get_state_file()
-        logging.info(previous_state.get('some_parameter'))
+        # TODO stále je potřeba nějak vyřešit freeze struktury aby se nepřidávali dynamicky sloucpe nebo neodebírali
 
-        # Create output table (Table definition - just metadata)
-        table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
+        self._init_connection(duck_db_file=self.pipeline_destination.config_params.get('credentials'))
 
-        # get file path of the table (data/out/tables/Features.csv)
-        out_table_path = table.full_path
-        logging.info(out_table_path)
+        out_tables = self._get_tables(database=self.dataset_name)
 
-        # Add timestamp column and save into out_table_path
-        input_table = input_tables[0]
-        with (open(input_table.full_path, 'r') as inp_file,
-              open(table.full_path, mode='wt', encoding='utf-8', newline='') as out_file):
-            reader = csv.DictReader(inp_file)
+        for table in out_tables:
 
-            columns = list(reader.fieldnames)
-            # append timestamp
-            columns.append('timestamp')
+            table_meta = self.connection.execute(f"""DESCRIBE TABLE '{table}';""").fetchall()
+            schema = OrderedDict(
+                (c[0], ColumnDefinition(data_types=BaseType(dtype=self.convert_base_types(c[1])))) for c in table_meta
+                if not str(c[0]).startswith('_dlt'))
 
-            # write result with column added
-            writer = csv.DictWriter(out_file, fieldnames=columns)
-            writer.writeheader()
-            for in_row in reader:
-                in_row['timestamp'] = datetime.now().isoformat()
-                writer.writerow(in_row)
+            primary_key = [c[0] for c in table_meta if c[3] == 'PRI']
+            out_table = self.create_out_table_definition(f"{table}.csv",
+                                                         schema=schema,
+                                                         # TODO primary_key
+                                                         primary_key=[],
+                                                         # TODO incremental
+                                                         incremental=False,
+                                                         destination=table,
+                                                         )
 
-        # Save table manifest (output.csv.manifest) from the Table definition
-        self.write_manifest(table)
+            try:
+                columns = ",".join([f"\"{c[0]}\"" for c in schema.items()])
+                export_query = f'''COPY (SELECT {columns} FROM "{table}") TO "{out_table.full_path}"
+                                                            (HEADER, DELIMITER ',', FORCE_QUOTE *)'''
+                self.connection.execute(export_query)
+            except duckdb.ConversionException as e:
+                raise UserException(f"Error during query execution: {e}")
 
-        # Write new state - will be available next run
-        self.write_state_file({"some_state_parameter": "value"})
+            self.write_manifest(out_table)
 
-        # ####### EXAMPLE TO REMOVE END
+    def run_zendesk_pipeline(self) -> Any:
+        """
+        Loads all possible tables for Zendesk Support
+        """
+        pipeline = dlt.pipeline(
+            pipeline_name=self.pipeline_name,
+            destination=self.pipeline_destination,
+            dataset_name=self.dataset_name,
+            progress="log",
+        )
+
+        return pipeline.run(zendesk_support(), refresh="drop_sources")
+        # return pipeline.run(zendesk_support().with_resources("tickets"))
+
+    @staticmethod
+    def convert_base_types(dtype: str) -> SupportedDataTypes:
+        if dtype in ['TINYINT', 'SMALLINT', 'INTEGER', 'BIGINT', 'HUGEINT',
+                     'UTINYINT', 'USMALLINT', 'UINTEGER', 'UBIGINT', 'UHUGEINT']:
+            return SupportedDataTypes.INTEGER
+        elif dtype in ['REAL', 'DECIMAL']:
+            return SupportedDataTypes.NUMERIC
+        elif dtype == 'DOUBLE':
+            return SupportedDataTypes.FLOAT
+        elif dtype == 'BOOLEAN':
+            return SupportedDataTypes.BOOLEAN
+        elif dtype in ['TIMESTAMP', 'TIMESTAMP WITH TIME ZONE']:
+            return SupportedDataTypes.TIMESTAMP
+        elif dtype == 'DATE':
+            return SupportedDataTypes.DATE
+        else:
+            return SupportedDataTypes.STRING
+
+    def _init_connection(self, duck_db_file):
+        self.connection = duckdb.connect(duck_db_file)
+
+    def _get_tables(self, database):
+        all_tables = self.connection.sql(f"USE {database}; SHOW TABLES;").fetchall()
+        return [t[0] for t in all_tables if not str(t[0]).startswith("_dlt")]
 
 
 """
