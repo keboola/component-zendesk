@@ -2,7 +2,7 @@ import os
 import time
 import logging
 from collections import OrderedDict
-from typing import Any, Union
+from typing import Any
 
 import dlt
 from duckdb import duckdb
@@ -71,7 +71,7 @@ class Component(ComponentBase):
                 (c[0], ColumnDefinition(data_types=BaseType(dtype=self.convert_base_types(c[1])))) for c in table_meta
                 if not str(c[0]).startswith('_dlt'))
 
-            primary_key = [c[0] for c in table_meta if c[3] == 'PRI']
+            # primary_key = [c[0] for c in table_meta if c[3] == 'PRI']
             out_table = self.create_out_table_definition(f"{table}.csv",
                                                          schema=schema,
                                                          # TODO primary_key

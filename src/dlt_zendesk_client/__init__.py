@@ -7,7 +7,7 @@ from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 
-from .helpers.credentials import TZendeskCredentials, ZendeskCredentialsOAuth
+from .helpers.credentials import TZendeskCredentials
 from .helpers.api_client import ZendeskAPIClient, PaginationType
 
 from .settings import DEFAULT_START_DATE
@@ -39,12 +39,12 @@ def zendesk_support(credentials: TZendeskCredentials = dlt.secrets.value,
     # if the data key is None it is assumed to be the same as the resource name
     # The last element of the tuple says if endpoint supports cursor pagination
     supported_endpoints = [
-        ("users", "/api/v2/users.json", "Users", ["id"], True),
-        ("groups", "/api/v2/groups.json", "Groups", [], True),
-        ("group_memberships", "/api/v2/group_memberships.json", [], None, True),
-        ("organizations", "/api/v2/organizations.json", "Organizations", [], True),
-        ("tags", "/api/v2/tags.json", "Tags", [], True),
-        ("ticket_fields", "/api/v2/ticket_fields.json", "TicketsFields", [], True),
+        ("users", "/api/v2/users.json", Users, ["id"], True),
+        ("groups", "/api/v2/groups.json", Groups, None, True),
+        ("group_memberships", "/api/v2/group_memberships.json", None, None, True),
+        ("organizations", "/api/v2/organizations.json", Organizations, None, True),
+        ("tags", "/api/v2/tags.json", None, None, True),
+        ("ticket_fields", "/api/v2/ticket_fields.json", TicketsFields, None, True),
     ]
 
     @dlt.resource(name="tickets", write_disposition="replace", parallelized=True, primary_key=["id"], columns=Tickets)
@@ -66,7 +66,7 @@ def zendesk_support(credentials: TZendeskCredentials = dlt.secrets.value,
         for page in ticket_pages:
             yield page
 
-    @dlt.transformer(write_disposition="replace", parallelized=True)
+    @dlt.transformer(write_disposition="replace", parallelized=True, columns=TicketComments)
     def ticket_comments(ticket_table: Iterator[TDataItem]) -> Iterator[TDataItem]:
         for ticket in ticket_table:
             comment_pages = zendesk_client.get_pages(
@@ -77,7 +77,7 @@ def zendesk_support(credentials: TZendeskCredentials = dlt.secrets.value,
             for comments in comment_pages:
                 yield [dict(ticket_id=ticket['id'], **i) for i in comments]
 
-    @dlt.transformer(write_disposition="replace", parallelized=True)
+    @dlt.transformer(write_disposition="replace", parallelized=True, columns=TicketAudits)
     def ticket_audits(ticket_table: Iterator[TDataItem]) -> Iterator[TDataItem]:
         for ticket in ticket_table:
             audit_pages = zendesk_client.get_pages(
@@ -96,12 +96,11 @@ def zendesk_support(credentials: TZendeskCredentials = dlt.secrets.value,
     # loading base tables
     resource_list = [
         ticket_table(),
-        # ticket_table() | ticket_comments,
-        # ticket_table() | ticket_audits
+        ticket_table() | ticket_comments,
+        ticket_table() | ticket_audits
     ]
     # other tables to be loaded
-    resources_to_be_loaded = list(supported_endpoints)  # make a copy
-    for resource, endpoint_url, columns, primary_key, cursor_paginated in resources_to_be_loaded:
+    for resource, endpoint_url, columns, primary_key, cursor_paginated in list(supported_endpoints):
         resource_list.append(
             dlt.resource(
                 basic_resource(
@@ -109,7 +108,7 @@ def zendesk_support(credentials: TZendeskCredentials = dlt.secrets.value,
                 ),
                 name=resource,
                 primary_key=primary_key,
-                # columns=columns,
+                columns=columns,
                 write_disposition="replace",
                 parallelized=True,
             )
@@ -117,25 +116,8 @@ def zendesk_support(credentials: TZendeskCredentials = dlt.secrets.value,
     return resource_list
 
 
-def basic_resource(
-        zendesk_client: ZendeskAPIClient,
-        endpoint_url: str,
-        data_key: str,
-        cursor_paginated: bool,
-) -> Iterator[TDataItem]:
-    """
-    Basic loader for most endpoints offered by Zenpy. Supports pagination. Expects to be called as a DLT Resource.
-
-    Args:
-        zendesk_client: The Zendesk API client instance, used to make calls to Zendesk API.
-        endpoint_url: The Zenpy endpoint to retrieve data from, usually directly linked to a Zendesk API endpoint.
-        data_key: The key in the response JSON that contains the data to be yielded.
-        cursor_paginated: Tells to use CURSOR pagination or OFFSET/no pagination
-
-    Yields:
-        TDataItem: Dictionary containing the resource data.
-    """
-
+def basic_resource(zendesk_client: ZendeskAPIClient, endpoint_url: str, data_key: str, cursor_paginated: bool, ) -> \
+        Iterator[TDataItem]:
     pages = zendesk_client.get_pages(
         endpoint_url,
         data_key,

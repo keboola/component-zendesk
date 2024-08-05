@@ -1,5 +1,5 @@
 import logging
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, Field, ValidationError
 from keboola.component.exceptions import UserException
 
 

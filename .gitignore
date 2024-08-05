@@ -10,4 +10,5 @@ __pycache__/
 # kbc datafolder
 /data
 /venv
-/_to_del/
+
+

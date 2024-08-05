@@ -1,180 +1,176 @@
 from typing import Optional, ClassVar
 
 from dlt.common.libs.pydantic import BaseModel, DltConfig
-from pydantic import Field, field_validator, model_serializer
+from pydantic import Field, AliasPath
 
-'''
+
 class Thumbnails(BaseModel):
-    content_type: Optional[str]
-    content_url: Optional[str]
-    id: Optional[int]
-    name: Optional[str]
-    size: Optional[int]
+    id: Optional[int] = Field(default=None)
+    name: Optional[str] = Field(default=None)
+    size: Optional[int] = Field(default=None)
+    content_type: Optional[str] = Field(default=None)
+    content_url: Optional[str] = Field(default=None)
 
 
 class Photo(BaseModel):
-    id: int
-    file_name: Optional[str] = Field(alias='name')
-    content_url: Optional[str]
-    content_type: Optional[str]
-    size: Optional[int]
-    width: Optional[int]
-    height: Optional[int]
-    inline: Optional[str]
-    thumbnails: Thumbnails
+    id: Optional[int] = Field(default=None)
+    name: Optional[str] = Field(default=None)
+    content_url: Optional[str] = Field(default=None)
+    content_type: Optional[str] = Field(default=None)
+    size: Optional[int] = Field(default=None)
+    width: Optional[int] = Field(default=None)
+    height: Optional[int] = Field(default=None)
+    thumbnails: Optional[list[Thumbnails]]
 
 
 class TicketsFields(BaseModel):
-    id: int
-    type: Optional[str]
-    title: Optional[str]
-    active: Optional[str]
-    tag: Optional[str]
+    id: Optional[int] = Field(default=None)
+    type: Optional[str] = Field(default=None)
+    title: Optional[str] = Field(default=None)
+    active: Optional[bool] = Field(default=None)
+    tag: Optional[str] = Field(default=None)
 
 
 class SatisfactionRating(BaseModel):
-    id: Optional[int]
-    score: Optional[str]
-    comment: Optional[str]
+    id: Optional[int] = Field(default=None)
+    score: Optional[str] = Field(default=None)
+    comment: Optional[str] = Field(default=None)
 
 
 class TicketsMetric(BaseModel):
-    id: int
-    ticket_id: Optional[int]
-    created_at: Optional[str]
-    updated_at: Optional[str]
-    group_stations: Optional[int]
-    assignee_stations: Optional[int]
-    reopens: Optional[int]
-    replies: Optional[int]
-    assignee_updated_at: Optional[str]
-    requester_updated_at: Optional[str]
-    status_updated_at: Optional[str]
-    initially_assigned_at: Optional[str]
-    assigned_at: Optional[str]
-    solved_at: Optional[str]
-    latest_comment_added_at: Optional[str]
-    reply_time_in_minutes_calendar: Optional[int] = Field(alias='reply_time_in_minutes.calendar',
+    id: Optional[int] = Field(default=None)
+    ticket_id: Optional[int] = Field(default=None)
+    created_at: Optional[str] = Field(default=None)
+    updated_at: Optional[str] = Field(default=None)
+    group_stations: Optional[int] = Field(default=None)
+    assignee_stations: Optional[int] = Field(default=None)
+    reopens: Optional[int] = Field(default=None)
+    replies: Optional[int] = Field(default=None)
+    assignee_updated_at: Optional[str] = Field(default=None)
+    requester_updated_at: Optional[str] = Field(default=None)
+    status_updated_at: Optional[str] = Field(default=None)
+    initially_assigned_at: Optional[str] = Field(default=None)
+    assigned_at: Optional[str] = Field(default=None)
+    solved_at: Optional[str] = Field(default=None)
+    latest_comment_added_at: Optional[str] = Field(default=None)
+    reply_time_in_minutes_calendar: Optional[int] = Field(default=None, alias='reply_time_in_minutes.calendar',
                                                           validation_alias=AliasPath('reply_time_in_minutes',
                                                                                      'calendar'))
-    reply_time_in_minutes_business: Optional[int] = Field(alias='reply_time_in_minutes.business',
+    reply_time_in_minutes_business: Optional[int] = Field(default=None, alias='reply_time_in_minutes.business',
                                                           validation_alias=AliasPath('reply_time_in_minutes',
                                                                                      'business'))
-    first_resolution_time_in_minutes_calendar: Optional[int] = Field(alias='first_resolution_time_in_minutes.calendar',
+    first_resolution_time_in_minutes_calendar: Optional[int] = Field(default=None,
+                                                                     alias='first_resolution_time_in_minutes.calendar',
                                                                      validation_alias=AliasPath(
                                                                          'first_resolution_time_in_minutes',
                                                                          'calendar'))
-    first_resolution_time_in_minutes_business: Optional[int] = Field(alias='first_resolution_time_in_minutes.business',
+    first_resolution_time_in_minutes_business: Optional[int] = Field(default=None,
+                                                                     alias='first_resolution_time_in_minutes.business',
                                                                      validation_alias=AliasPath(
                                                                          'first_resolution_time_in_minutes',
                                                                          'business'))
-    full_resolution_time_in_minutes_calendar: Optional[int] = Field(alias='full_resolution_time_in_minutes.calendar',
+    full_resolution_time_in_minutes_calendar: Optional[int] = Field(default=None,
+                                                                    alias='full_resolution_time_in_minutes.calendar',
                                                                     validation_alias=AliasPath(
                                                                         'full_resolution_time_in_minutes',
                                                                         'calendar'))
-    full_resolution_time_in_minutes_business: Optional[int] = Field(alias='full_resolution_time_in_minutes.business',
+    full_resolution_time_in_minutes_business: Optional[int] = Field(default=None,
+                                                                    alias='full_resolution_time_in_minutes.business',
                                                                     validation_alias=AliasPath(
                                                                         'full_resolution_time_in_minutes',
                                                                         'business'))
-    agent_wait_time_in_minutes_calendar: Optional[int] = Field(alias='agent_wait_time_in_minutes.calendar',
+    agent_wait_time_in_minutes_calendar: Optional[int] = Field(default=None,
+                                                               alias='agent_wait_time_in_minutes.calendar',
                                                                validation_alias=AliasPath('agent_wait_time_in_minutes',
                                                                                           'calendar'))
-    agent_wait_time_in_minutes_business: Optional[int] = Field(alias='agent_wait_time_in_minutes.business',
+    agent_wait_time_in_minutes_business: Optional[int] = Field(default=None,
+                                                               alias='agent_wait_time_in_minutes.business',
                                                                validation_alias=AliasPath('agent_wait_time_in_minutes',
                                                                                           'business'))
-    requester_wait_time_in_minutes_calendar: Optional[int] = Field(alias='requester_wait_time_in_minutes.calendar',
+    requester_wait_time_in_minutes_calendar: Optional[int] = Field(default=None,
+                                                                   alias='requester_wait_time_in_minutes.calendar',
                                                                    validation_alias=AliasPath(
                                                                        'requester_wait_time_in_minutes', 'calendar'))
-    requester_wait_time_in_minutes_business: Optional[int] = Field(alias='requester_wait_time_in_minutes.business',
+    requester_wait_time_in_minutes_business: Optional[int] = Field(default=None,
+                                                                   alias='requester_wait_time_in_minutes.business',
                                                                    validation_alias=AliasPath(
                                                                        'requester_wait_time_in_minutes', 'business'))
-    on_hold_time_in_minutes_calendar: Optional[int] = Field(alias='on_hold_time_in_minutes.calendar',
+    on_hold_time_in_minutes_calendar: Optional[int] = Field(default=None, alias='on_hold_time_in_minutes.calendar',
                                                             validation_alias=AliasPath('on_hold_time_in_minutes',
                                                                                        'calendar'))
-    on_hold_time_in_minutes_business: Optional[int] = Field(alias='on_hold_time_in_minutes.business',
+    on_hold_time_in_minutes_business: Optional[int] = Field(default=None, alias='on_hold_time_in_minutes.business',
                                                             validation_alias=AliasPath('on_hold_time_in_minutes',
                                                                                        'business'))
 
 
-class Tags(BaseModel):
-    forceType: Optional[str]
-    Optional[str]: Optional[str]
-
-
 class UserFields(BaseModel):
-    user_date: Optional[str]
-    user_decimal: Optional[float]
-    user_dropdown: Optional[str]
+    user_date: Optional[str] = Field(default=None)
+    user_decimal: Optional[float] = Field(default=None)
+    user_dropdown: Optional[str] = Field(default=None)
 
 
 class Users(BaseModel):
     id: int
-    name: Optional[str]
-    email: Optional[str]
-    url: Optional[str]
-    deleted: Optional[bool]
-    created_at: Optional[str]
-    updated_at: Optional[str]
-    time_zone: Optional[str]
-    phone: Optional[str]
-    photo: Photo
-    locale_id: Optional[int]
-    locale: Optional[str]
-    organization_id: Optional[int]
-    role: Optional[str]
-    role_type: Optional[int]
-    verified: Optional[str]
-    external_id: Optional[str]
-    alias: Optional[str]
-    active: Optional[bool]
-    shared: Optional[bool]
-    shared_agent: Optional[bool]
-    last_login_at: Optional[str]
-    two_factor_auth_enabled: Optional[str]
-    signature: Optional[str]
-    details: Optional[str]
-    notes: Optional[str]
-    custom_role_id: Optional[int]
-    moderator: Optional[bool]
-    ticket_restriction: Optional[str]
-    only_private_comments: Optional[bool]
-    restricted_agent: Optional[bool]
-    suspended: Optional[bool]
-    chat_only: Optional[bool]
-    user_fields: UserFields
-    tags: Tags
+    name: Optional[str] = Field(default=None)
+    email: Optional[str] = Field(default=None)
+    url: Optional[str] = Field(default=None)
+    deleted: Optional[bool] = Field(default=None)
+    created_at: Optional[str] = Field(default=None)
+    updated_at: Optional[str] = Field(default=None)
+    time_zone: Optional[str] = Field(default=None)
+    phone: Optional[str] = Field(default=None)
+    photo: Optional[Photo]
+    locale_id: Optional[int] = Field(default=None)
+    locale: Optional[str] = Field(default=None)
+    organization_id: Optional[int] = Field(default=None)
+    role: Optional[str] = Field(default=None)
+    role_type: Optional[int] = Field(default=None)
+    verified: Optional[bool] = Field(default=None)
+    external_id: Optional[str] = Field(default=None)
+    alias: Optional[str] = Field(default=None)
+    active: Optional[bool] = Field(default=None)
+    shared: Optional[bool] = Field(default=None)
+    shared_agent: Optional[bool] = Field(default=None)
+    last_login_at: Optional[str] = Field(default=None)
+    two_factor_auth_enabled: Optional[str] = Field(default=None)
+    signature: Optional[str] = Field(default=None)
+    details: Optional[str] = Field(default=None)
+    notes: Optional[str] = Field(default=None)
+    custom_role_id: Optional[int] = Field(default=None)
+    moderator: Optional[bool] = Field(default=None)
+    ticket_restriction: Optional[str] = Field(default=None)
+    only_private_comments: Optional[bool] = Field(default=None)
+    restricted_agent: Optional[bool] = Field(default=None)
+    suspended: Optional[bool] = Field(default=None)
+    chat_only: Optional[bool] = Field(default=None)
+    user_fields: Optional[UserFields]
+    tags: Optional[list] = Field(default=None)
 
 
 class Groups(BaseModel):
     id: int
     name: Optional[str]
     url: Optional[str]
-    deleted: Optional[str]
+    deleted: Optional[bool] = Field(default=None)
     created_at: Optional[str]
     updated_at: Optional[str]
-
-
-class DomainNames(BaseModel):
-    domain: Optional[str] = Field(alias='.')
 
 
 class Organizations(BaseModel):
     id: int
     name: Optional[str]
     url: Optional[str]
-    shared_tickets: Optional[str]
-    shared_comments: Optional[str]
-    external_id: Optional[str]
+    organization_fields: Optional[object]
+    shared_tickets: Optional[bool]
+    shared_comments: Optional[bool]
+    external_id: Optional[int]
     created_at: Optional[str]
     updated_at: Optional[str]
-    domain_names: DomainNames
+    domain_names: Optional[list]
     details: Optional[str]
     notes: Optional[str]
-    group_id: Optional[str]
+    group_id: Optional[int]
     tags: Optional[list[str]]
-
-
-'''
 
 
 class TicketsFieldsValues(BaseModel):
@@ -183,32 +179,58 @@ class TicketsFieldsValues(BaseModel):
 
 
 class Tickets(BaseModel):
-    id: int = None
-    url: Optional[str]
-    external_id: Optional[int]
-    type: Optional[str]
-    subject: Optional[str]
-    priority: Optional[str]
-    status: Optional[str]
-    recipient: Optional[str]
-    requester_id: Optional[int]
-    submitter_id: Optional[int]
-    assignee_id: Optional[int]
-    organization_id: Optional[int]
-    group_id: Optional[int]
-    forum_topic_id: Optional[int]
-    problem_id: Optional[int]
-    has_incidents: Optional[bool]
-    due_at: Optional[str]
-    via: Optional[object]
-    custom_fields: list[TicketsFieldsValues] = []
-    # satisfaction_rating: Optional[SatisfactionRating]
-    ticket_form_id: Optional[int]
-    brand_id: Optional[int]
-    created_at: Optional[str]
-    updated_at: Optional[str]
-    tags: Optional[list[str]]
-    # metric_set: Optional[TicketsMetric]
+    id: int
+    url: Optional[str] = Field(default=None)
+    external_id: Optional[int] = Field(default=None)
+    type: Optional[str] = Field(default=None)
+    subject: Optional[str] = Field(default=None)
+    priority: Optional[str] = Field(default=None)
+    status: Optional[str] = Field(default=None)
+    recipient: Optional[str] = Field(default=None)
+    requester_id: Optional[int] = Field(default=None)
+    submitter_id: Optional[int] = Field(default=None)
+    assignee_id: Optional[int] = Field(default=None)
+    organization_id: Optional[int] = Field(default=None)
+    group_id: Optional[int] = Field(default=None)
+    forum_topic_id: Optional[int] = Field(default=None)
+    problem_id: Optional[int] = Field(default=None)
+    has_incidents: Optional[bool] = Field(default=None)
+    due_at: Optional[str] = Field(default=None)
+    via: Optional[object] = Field(default=None)
+    custom_fields: list[TicketsFieldsValues] = Field(default=None)
+    satisfaction_rating: Optional[SatisfactionRating]
+    ticket_form_id: Optional[int] = Field(default=None)
+    brand_id: Optional[int] = Field(default=None)
+    created_at: Optional[str] = Field(default=None)
+    updated_at: Optional[str] = Field(default=None)
+    tags: Optional[list]
+    metric_set: Optional[TicketsMetric]
 
-    dlt_config: ClassVar[DltConfig] = {"skip_complex_types": True}
+    # dlt_config: ClassVar[DltConfig] = {"skip_complex_types": True}
+
+
+class TicketAudits(BaseModel):
+    id: int
+    ticket_id: int
+    events: Optional[list[object]]
+    author_id: Optional[int] = Field(default=None)
+    created_at: Optional[str] = Field(default=None)
+    metadata: Optional[object]
+    via: Optional[object]
+
+
+class TicketComments(BaseModel):
+    id: int
+    ticket_id: int
+    type: Optional[str] = Field(default=None)
+    author_id: Optional[int] = Field(default=None)
+    body: Optional[str] = Field(default=None)
+    html_body: Optional[str] = Field(default=None)
+    plain_body: Optional[str] = Field(default=None)
+    public: Optional[bool] = Field(default=None)
+    attachments: Optional[list[object]] = Field(default=None)
+    via: Optional[object] = Field(default=None)
+    created_at: Optional[str] = Field(default=None)
+    uploads: Optional[list[object]] = Field(default=None)
+    metadata: Optional[object] = Field(default=None)
 
