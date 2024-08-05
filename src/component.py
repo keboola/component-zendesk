@@ -82,12 +82,13 @@ class Component(ComponentBase):
                                                          # TODO incremental
                                                          incremental=False,
                                                          destination=table,
+                                                         has_header=True,
                                                          )
 
             try:
                 columns = ",".join([f"\"{c[0]}\"" for c in schema.items()])
                 export_query = f'''COPY (SELECT {columns} FROM "{table}") TO "{out_table.full_path}"
-                                                            (HEADER, DELIMITER ',', FORCE_QUOTE *)'''
+                                                                    (HEADER false, DELIMITER ',', FORCE_QUOTE *)'''
                 self.connection.execute(export_query)
             except duckdb.ConversionException as e:
                 raise UserException(f"Error during query execution: {e}")
