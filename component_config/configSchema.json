@@ -3,7 +3,7 @@
     "title": "extractor configuration",
     "required": [
         "email",
-        "api_token",
+        "#api_token",
         "sub_domain"
     ],
     "properties": {
@@ -14,7 +14,8 @@
         },
         "#api_token": {
             "type": "string",
-            "title": "API token",
+            "title": "#API token",
+            "format": "password",
             "propertyOrder": 2
         },
         "sub_domain": {
