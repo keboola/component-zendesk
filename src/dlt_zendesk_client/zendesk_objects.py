@@ -1,6 +1,6 @@
-from typing import Optional, ClassVar
+from typing import Optional
 
-from dlt.common.libs.pydantic import BaseModel, DltConfig
+from dlt.common.libs.pydantic import BaseModel
 from pydantic import Field, AliasPath
 
 
@@ -233,4 +233,3 @@ class TicketComments(BaseModel):
     created_at: Optional[str] = Field(default=None)
     uploads: Optional[list[object]] = Field(default=None)
     metadata: Optional[object] = Field(default=None)
-

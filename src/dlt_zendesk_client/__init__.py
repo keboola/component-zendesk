@@ -12,7 +12,7 @@ from .helpers.api_client import ZendeskAPIClient, PaginationType
 
 from .settings import DEFAULT_START_DATE
 
-from .zendesk_objects import *
+from .zendesk_objects import (Tickets, TicketComments, TicketAudits, Users, Groups, Organizations, TicketsFields)
 
 
 @dlt.source(max_table_nesting=2)
