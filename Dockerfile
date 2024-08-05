@@ -15,7 +15,10 @@ RUN pip install flake8
 
 RUN pip install -r /code/requirements.txt
 
-RUN mkdir -p /.dlt
+
+RUN mkdir -p /tmp/.dlt
+
+RUN export DLT_DATA_DIR=/tmp/.dlt
 
 WORKDIR /code/
 
