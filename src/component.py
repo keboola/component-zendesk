@@ -41,6 +41,9 @@ class Component(ComponentBase):
         # check for missing configuration parameters
         params = Configuration(**self.configuration.parameters)
 
+        dlt_tmp_dir = "/tmp/.dlt"
+        os.makedirs(dlt_tmp_dir, exist_ok=True)
+        os.environ["RUNTIME__DLT_DATA_DIR"] = dlt_tmp_dir
         os.environ["RUNTIME__DLTHUB_TELEMETRY"] = "false"
         os.environ["RUNTIME__LOG_LEVEL"] = "DEBUG" if params.debug else "INFO"
         os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = params.sub_domain
