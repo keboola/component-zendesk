@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 ENV PYTHONIOENCODING utf-8
 
 COPY /src /code/src/
@@ -17,5 +17,6 @@ RUN pip install -r /code/requirements.txt
 
 WORKDIR /code/
 
+RUN chmod -R 777 /code/src/
 
 CMD ["python", "-u", "/code/src/component.py"]

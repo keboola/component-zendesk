@@ -38,11 +38,10 @@ class Component(ComponentBase):
         Main execution code
         """
 
-        # TODO dlt --disable-telemetry
-        #
         # check for missing configuration parameters
         params = Configuration(**self.configuration.parameters)
 
+        os.environ["RUNTIME__DLTHUB_TELEMETRY"] = "false"
         os.environ["RUNTIME__LOG_LEVEL"] = "DEBUG" if params.debug else "INFO"
         os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = params.sub_domain
         os.environ["SOURCES__CREDENTIALS__EMAIL"] = params.email
@@ -57,8 +56,6 @@ class Component(ComponentBase):
         end = time.time()
         print(f"Time taken: {end - start}")
         pipeline.raise_on_failed_jobs()
-
-        # TODO stále je potřeba nějak vyřešit freeze struktury aby se nepřidávali dynamicky sloucpe nebo neodebírali
 
         self._init_connection(duck_db_file=self.pipeline_destination.config_params.get('credentials'))
 
