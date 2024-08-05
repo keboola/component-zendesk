@@ -15,8 +15,8 @@ RUN pip install flake8
 
 RUN pip install -r /code/requirements.txt
 
-WORKDIR /code/
+RUN mkdir -p /code/src/.dlt && chmod -R 777 /code/src/.dlt
 
-RUN chmod -R 777 /code/src/
+WORKDIR /code/
 
 CMD ["python", "-u", "/code/src/component.py"]
