@@ -1,4 +1,4 @@
-keboola.ex-zendesk
+keboola.ex-zendesk-v2
 =============
 
 Description
@@ -63,8 +63,8 @@ Clone this repository, init the workspace and run the component with following
 command:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-git clone git@github.com:keboola/component-zendesk.git keboola.ex_zendesk
-cd keboola.ex_zendesk
+git clone git@github.com:keboola/component-zendesk.git keboola.ex-zendesk-v2
+cd keboola.ex-zendesk-v2
 docker-compose build
 docker-compose run --rm dev
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

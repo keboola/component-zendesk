@@ -12,7 +12,7 @@
             "title": "Email",
             "propertyOrder": 1
         },
-        "api_token": {
+        "#api_token": {
             "type": "string",
             "title": "API token",
             "propertyOrder": 2
