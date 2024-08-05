@@ -14,7 +14,7 @@
         },
         "#api_token": {
             "type": "string",
-            "title": "#API token",
+            "title": "API token",
             "format": "password",
             "propertyOrder": 2
         },
