@@ -2,64 +2,151 @@
     "type": "object",
     "title": "extractor configuration",
     "required": [
-        "email",
-        "#api_token",
-        "sub_domain"
+        "authentication"
     ],
     "properties": {
-        "email": {
-            "type": "string",
-            "title": "Email",
-            "propertyOrder": 1
-        },
-        "#api_token": {
-            "type": "string",
-            "title": "API token",
-            "format": "password",
-            "propertyOrder": 2
-        },
-        "sub_domain": {
-            "type": "string",
-            "title": "Sub domain",
-            "propertyOrder": 3
-        },
-        "custom_bucket": {
-            "type": "boolean",
-            "title": "Custom output bucket",
-            "format": "checkbox",
-            "description": "By default bucket will be created",
-            "propertyOrder": 4
-        },
-        "destination_bucket": {
-            "type": "string",
-            "title": "Destination bucket",
-            "description": "Choice of destination bucket",
-            "enum": [],
-            "items": {
-                "enum": [],
-                "type": "string"
-            },
-            "format": "select",
-            "options": {
-                "async": {
-                    "label": "Load available buckets",
-                    "action": "get_buckets",
-                    "autoload": [
-                        "parameters.custom_bucket"
-                    ]
+        "authentication": {
+            "type": "object",
+            "title": "Authorization",
+            "required": [
+                "email",
+                "#api_token",
+                "sub_domain"
+            ],
+            "propertyOrder": 10,
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "title": "Email",
+                    "propertyOrder": 10
                 },
-                "dependencies": {
-                    "custom_bucket": true
+                "#api_token": {
+                    "type": "string",
+                    "title": "API token",
+                    "description": "<a href='https://support.zendesk.com/hc/en-us/articles/4408889192858-Generating-a-new-API-token'>How to obtain API token</a>",
+                    "format": "password",
+                    "propertyOrder": 20
+                },
+                "sub_domain": {
+                    "type": "string",
+                    "title": "Sub-domain",
+                    "description": "Sub-domain is a part of your Zendesk URL. For example: https://mysubdomain.zendesk.com.",
+                    "propertyOrder": 30
                 }
-            },
-            "uniqueItems": true,
-            "propertyOrder": 5
+            }
+        },
+        "available_details": {
+            "type": "object",
+            "title": "Available Details",
+            "description": "Choose details of tickets which will be loaded also. Details are loaded per ticket. It has an impact on performance.",
+            "propertyOrder": 15,
+            "properties": {
+                "ticket_comments_raw": {
+                    "type": "boolean",
+                    "title": "Comments",
+                    "default": true,
+                    "format": "checkbox",
+                    "propertyOrder": 10
+                },
+                "ticket_audits_raw": {
+                    "type": "boolean",
+                    "title": "Audits",
+                    "default": true,
+                    "format": "checkbox",
+                    "propertyOrder": 20
+                }
+            }
+        },
+        "sync_options": {
+            "type": "object",
+            "title": "Sync Options",
+            "propertyOrder": 20,
+            "properties": {
+                "sync_mode": {
+                    "enum": [
+                        "full_sync",
+                        "incremental_sync"
+                    ],
+                    "type": "string",
+                    "title": "Sync Mode",
+                    "default": "incremental_sync",
+                    "options": {
+                        "enum_titles": [
+                            "Full Sync",
+                            "Incremental Sync"
+                        ]
+                    },
+                    "required": true,
+                    "description": "Full Sync downloads all data from the source every run, Incremental Sync downloads data (tickets, ticket_comments and ticket_audits) by parameter start_time described <a href='https://developer.zendesk.com/api-reference/ticketing/ticket-management/incremental_exports/#per_page'>here</a>. The start time is taken from the last successful run.",
+                    "propertyOrder": 20
+                }
+            }
+        },
+        "destination": {
+            "type": "object",
+            "title": "Destination",
+            "propertyOrder": 30,
+            "required": [
+                "load_type"
+            ],
+            "properties": {
+                "load_type": {
+                    "enum": [
+                        "full_load",
+                        "incremental_load"
+                    ],
+                    "type": "string",
+                    "title": "Load Type",
+                    "format": "checkbox",
+                    "default": "incremental_load",
+                    "options": {
+                        "enum_titles": [
+                            "Full Load",
+                            "Incremental Load"
+                        ]
+                    },
+                    "description": "If Full load is used, the destination table will be overwritten every run. If incremental load is used, data will be upserted into the destination table. Tables with a primary key will have rows updated, tables without a primary key will have rows appended.",
+                    "propertyOrder": 10
+                },
+                "custom_bucket": {
+                    "type": "boolean",
+                    "title": "Custom output bucket",
+                    "format": "checkbox",
+                    "description": "By default bucket will be created",
+                    "propertyOrder": 20
+                },
+                "destination_bucket": {
+                    "type": "string",
+                    "title": "Destination bucket",
+                    "description": "Choice of destination bucket",
+                    "enum": [],
+                    "items": {
+                        "enum": [],
+                        "type": "string"
+                    },
+                    "format": "select",
+                    "options": {
+                        "async": {
+                            "label": "Load available buckets",
+                            "action": "get_buckets",
+                            "autoload": [
+                                "parameters.custom_bucket"
+                            ]
+                        },
+                        "dependencies": {
+                            "custom_bucket": true
+                        }
+                    },
+                    "uniqueItems": true,
+                    "propertyOrder": 30
+                }
+            }
         },
         "debug": {
             "type": "boolean",
-            "title": "Debug Logging",
+            "title": "Debug",
             "format": "checkbox",
-            "propertyOrder": 6
+            "propertyOrder": 90
         }
     }
 }

@@ -44,7 +44,12 @@ class Component(ComponentBase):
         actual_start = pendulum.now().int_timestamp
 
         # get the previous start time
-        previous_start = self.get_state_file().get("time", {}).get("previousStart", DEFAULT_START_DATE)
+        if self.params.sync_options.is_incremental:
+            previous_start = self.get_state_file().get("time", {}).get("previousStart", DEFAULT_START_DATE)
+            logging.info(f"Incremental load mode - previous start date is {previous_start}")
+        else:
+            previous_start = DEFAULT_START_DATE
+            logging.info(f"Full sync mode load is disabled - starting from the default date {previous_start}")
         load_from_iso: int = ensure_pendulum_datetime(previous_start).int_timestamp
 
         # set the DLT environment
@@ -76,9 +81,9 @@ class Component(ComponentBase):
         os.environ["RUNTIME__LOG_LEVEL"] = "DEBUG" if self.params.debug else "CRITICAL"
         os.environ["EXTRACT__WORKERS"] = "10"
         os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
-        os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.sub_domain
-        os.environ["SOURCES__CREDENTIALS__EMAIL"] = self.params.email
-        os.environ["SOURCES__CREDENTIALS__TOKEN"] = self.params.api_token
+        os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.authentication.sub_domain
+        os.environ["SOURCES__CREDENTIALS__EMAIL"] = self.params.authentication.email
+        os.environ["SOURCES__CREDENTIALS__TOKEN"] = self.params.authentication.api_token
 
         # set the dataset and pipeline names
         self.dataset_name = DATASET_NAME
@@ -91,15 +96,24 @@ class Component(ComponentBase):
         self.pipeline_destination = dlt.destinations.duckdb(self.duckdb_file)
 
     def _run_dlt_pipeline(self, start_date_iso) -> list:
+        # prepare the pipeline
         pipeline = dlt.pipeline(
             pipeline_name=self.pipeline_name,
             destination=self.pipeline_destination,
             dataset_name=self.dataset_name,
             progress="log",
         )
-        pipeline = pipeline.run(zendesk_support(start_date_iso), refresh="drop_sources")
+
+        # filter the source by selected details
+        source = zendesk_support(start_date_iso)
+        for key, value in self.params.available_details.dict().items():
+            source.resources[key].selected = value
+
+        # run the pipeline
+        pipeline = pipeline.run(source, refresh="drop_sources")
         pipeline.raise_on_failed_jobs()
 
+        # get the loaded tables
         loaded_tables = []
         for package in pipeline.load_packages:
             jobs = package.jobs.get("completed_jobs", [])
@@ -137,12 +151,11 @@ class Component(ComponentBase):
             out_table = self.create_out_table_definition(f"{view.name}.csv",
                                                          schema=schema,
                                                          primary_key=view.primary_key,
-                                                         incremental=True,
+                                                         incremental=self.params.destination.is_incremental_load_type,
                                                          destination=".".join(
-                                                             filter(None, [self.params.destination_bucket,
+                                                             filter(None, [self.params.destination.destination_bucket,
                                                                            view.name])),
                                                          has_header=True,
-
                                                          )
             # export the view
             logging.info(f"Exporting view {view.name}")

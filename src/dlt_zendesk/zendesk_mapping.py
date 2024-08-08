@@ -60,15 +60,16 @@ views = {
         SELECT
             id AS users_pk,
             json(photo).id AS id,
-            json(photo).file_name AS file_name,
-            json(photo).content_url AS content_url,
-            json(photo).content_type AS content_type,
+            json_extract_string(photo,'$.file_name') AS file_name,
+            json_extract_string(photo,'$.content_url') AS content_url,
+            json_extract_string(photo,'$.content_type') AS content_type,
             json(photo).size AS size,
             json(photo).width AS width,
             json(photo).height AS height,
             json(photo).inline AS inline
         FROM
-            users_raw;
+            users_raw
+        WHERE json(photo) IS NOT NULL;
     """, ["users_raw"], ["id"]),
 
     TableMapping("users_groups", """
@@ -119,9 +120,10 @@ views = {
         CREATE VIEW organizations_domain_names AS
         SELECT
             id AS organizations_pk,
-            unnest(from_json(domain_names,'["JSON"]')) AS "domain"
+            unnest(domain_names->>'$[*]') AS "domain"
         FROM
-            organizations_raw;
+            organizations_raw
+        WHERE domain_names IS NOT NULL;
     """, ["organizations_raw"], ["organizations_pk", "domain"]),
 
     TableMapping("tickets", """
@@ -144,7 +146,7 @@ views = {
             problem_id AS problem_id,
             has_incidents AS has_incidents,
             due_at AS due_at,
-            json(via).channel AS via_channel,
+            json_extract_string(via,'$.channel') AS via_channel,
             ticket_form_id AS ticket_form_id,
             brand_id AS brand_pk,
             created_at AS created_at,
@@ -158,10 +160,13 @@ views = {
         CREATE VIEW tickets_fields_values AS
         SELECT
             id AS tickets_pk,
-            json(custom_fields).value AS value,
-            json(custom_fields).id AS tickets_fields_pk
+            json_extract_string(cf.value,'$') AS value,
+            cf.id AS tickets_fields_pk
+        FROM (
+        SELECT id, json(unnest(custom_fields->>'$[*]'))  cf
         FROM
-            tickets_raw;
+            tickets_raw tr)
+        WHERE cf.id IS NOT NULL ;
     """, ["tickets_raw"], ["tickets_fields_pk", "tickets_pk"]),
 
     TableMapping("tickets_ratings", """
@@ -171,7 +176,8 @@ views = {
             json(satisfaction_rating).score AS score,
             json(satisfaction_rating).id AS id,
         FROM
-            tickets_raw;
+            tickets_raw
+        WHERE json(satisfaction_rating) IS NOT NULL;
     """, ["tickets_raw"], ["tickets_pk"]),
 
     TableMapping("tickets_metrics", """
@@ -179,19 +185,20 @@ views = {
         SELECT
             id AS tickets_pk,
             json(metric_set).id AS id,
-            json(metric_set).created_at AS created_at,
-            json(metric_set).updated_at AS updated_at,
+            json(metric_set).ticket_id AS ticket_id,
+            json_extract_string(metric_set,'$.created_at') AS created_at,
+            json_extract_string(metric_set,'$.updated_at') AS updated_at,
             json(metric_set).group_stations AS group_stations,
             json(metric_set).assignee_stations AS assignee_stations,
             json(metric_set).reopens AS reopens,
             json(metric_set).replies AS replies,
-            json(metric_set).assignee_updated_at AS assignee_updated_at,
-            json(metric_set).requester_updated_at AS requester_updated_at,
-            json(metric_set).status_updated_at AS status_updated_at,
-            json(metric_set).initially_assigned_at AS initially_assigned_at,
-            json(metric_set).assigned_at AS assigned_at,
-            json(metric_set).solved_at AS solved_at,
-            json(metric_set).latest_comment_added_at AS latest_comment_added_at,
+            json_extract_string(metric_set,'$.assignee_updated_at') AS assignee_updated_at,
+            json_extract_string(metric_set,'$.requester_updated_at') AS requester_updated_at,
+            json_extract_string(metric_set,'$.status_updated_at') AS status_updated_at,
+            json_extract_string(metric_set,'$.initially_assigned_at') AS initially_assigned_at,
+            json_extract_string(metric_set,'$.assigned_at') AS assigned_at,
+            json_extract_string(metric_set,'$.solved_at') AS solved_at,
+            json_extract_string(metric_set,'$.latest_comment_added_at') AS latest_comment_added_at,
             json(metric_set).reply_time_in_minutes_calendar AS reply_time_in_minutes_calendar,
             json(metric_set).reply_time_in_minutes_business AS reply_time_in_minutes_business,
             json(metric_set).first_resolution_time_in_minutes.calendar AS first_resolution_time_in_minutes_calendar,
@@ -205,8 +212,9 @@ views = {
             json(metric_set).on_hold_time_in_minutes.calendar AS on_hold_time_in_minutes_calendar,
             json(metric_set).on_hold_time_in_minutes.business AS on_hold_time_in_minutes_business
         FROM
-            tickets_raw;
-    """, ["tickets_raw"], ["tickets_pk", "id"]),
+            tickets_raw
+        WHERE json(metric_set) IS NOT NULL;
+    """, ["tickets_raw"], ["ticket_id", "id"]),
 
     TableMapping("tickets_fields", """
     CREATE VIEW tickets_fields AS
@@ -229,8 +237,8 @@ views = {
             "public" AS "public",
             author_id AS author_pk,
             audit_id AS tickets_audits_pk,
-            json(via).channel AS via_channel,
-            json(metadata).system.ip_address AS ip_address,
+            json_extract_string(via,'$.channel') AS via_channel,
+            json_extract_string(metadata,'$.system.ip_address') AS ip_address,
             created_at AS created_at,
             ticket_id AS tickets_pk
         FROM
@@ -241,32 +249,41 @@ views = {
         CREATE VIEW tickets_comments_attachments AS
         SELECT
             id AS tickets_comments_pk,
-            json(attachments).id AS id,
-            json(attachments).file_name AS file_name,
-            json(attachments).content_url AS content_url,
-            json(attachments).content_type AS content_type,
-            json(attachments).size AS size,
-            json(attachments).width AS width,
-            json(attachments).height AS height,
-            json(attachments).inline AS inline
-        FROM
-            ticket_comments_raw;
+            json_extract(att,'$.id') AS id,
+            json_extract_string(att,'$.file_name') AS file_name,
+            json_extract_string(att,'$.content_url') AS content_url,
+            json_extract_string(att,'$.content_type') AS content_type,
+            json_extract(att,'$.size') AS size,
+            json_extract(att,'$.width') AS width,
+            json_extract(att,'$.height') AS height,
+            json_extract(att,'$.inline') AS inline
+        FROM (
+            SELECT id,
+                   json(unnest(attachments->>'$[*]')) as att
+            FROM ticket_comments_raw)
+        WHERE att.id IS NOT NULL;
     """, ["ticket_comments_raw"], ["id"]),
 
     TableMapping("tickets_comments_attachments_thumbnails", """
         CREATE VIEW tickets_comments_attachments_thumbnails AS
         SELECT
             id AS tickets_comments_attachments_pk,
-            json(attachments).thumbnails.id AS id,
-            json(attachments).thumbnails.file_name AS file_name,
-            json(attachments).thumbnails.content_url AS content_url,
-            json(attachments).thumbnails.content_type AS content_type,
-            json(attachments).thumbnails.size AS size,
-            json(attachments).thumbnails.width AS width,
-            json(attachments).thumbnails.height AS height,
-            json(attachments).thumbnails.inline AS inline
+            json_extract(th,'$.id') AS id,
+            json_extract_string(th,'$.file_name') AS file_name,
+            json_extract_string(th,'$.content_url') AS content_url,
+            json_extract_string(th,'$.content_type') AS content_type,
+            json_extract(th,'$.size') AS size,
+            json_extract(th,'$.width') AS width,
+            json_extract(th,'$.height') AS height,
+            json_extract(th,'$.inline') AS inline
         FROM
-            ticket_comments_raw;
+            (SELECT id,
+                   json(unnest(json(att).thumbnails->>'$[*]')) as th
+            FROM
+               (SELECT id,
+                       json(unnest(attachments->>'$[*]')) as att
+                FROM ticket_comments_raw))
+        WHERE th.id IS NOT NULL;
     """, ["ticket_comments_raw"], ["id"]),
 
     TableMapping("tickets_audits", """
@@ -276,7 +293,7 @@ views = {
             ticket_id AS tickets_pk,
             created_at AS created_at,
             author_id AS author_pk,
-            json(via).channel AS via_channel
+            json_extract_string(via,'$.channel') AS via_channel
         FROM
             ticket_audits_raw;
     """, ["ticket_audits_raw"], ["id"])
