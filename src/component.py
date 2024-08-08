@@ -1,7 +1,6 @@
 import os
 import logging
 from collections import OrderedDict
-from typing import Any
 
 import dlt
 from dlt.common import pendulum

@@ -94,7 +94,7 @@ views = {
             updated_at AS updated_at
         FROM
             groups_raw;
-    """,["groups_raw"], ["id"]),
+    """, ["groups_raw"], ["id"]),
 
     TableMapping("organizations", """
         CREATE VIEW organizations AS
@@ -113,7 +113,7 @@ views = {
             tags AS tags
         FROM
             organizations_raw;
-    """,["organizations_raw"], ["id"]),
+    """, ["organizations_raw"], ["id"]),
 
     TableMapping("organizations_domain_names", """
         CREATE VIEW organizations_domain_names AS
@@ -122,7 +122,7 @@ views = {
             unnest(from_json(domain_names,'["JSON"]')) AS "domain"
         FROM
             organizations_raw;
-    """, ["organizations_raw"],["organizations_pk", "domain"]),
+    """, ["organizations_raw"], ["organizations_pk", "domain"]),
 
     TableMapping("tickets", """
         CREATE VIEW tickets AS
@@ -152,7 +152,7 @@ views = {
             tags AS tags
         FROM
             tickets_raw;
-    """, ["tickets_raw"],["id"]),
+    """, ["tickets_raw"], ["id"]),
 
     TableMapping("tickets_fields_values", """
         CREATE VIEW tickets_fields_values AS
@@ -162,7 +162,7 @@ views = {
             json(custom_fields).id AS tickets_fields_pk
         FROM    
             tickets_raw;
-    """, ["tickets_raw"],["tickets_fields_pk", "tickets_pk"]),
+    """, ["tickets_raw"], ["tickets_fields_pk", "tickets_pk"]),
 
     TableMapping("tickets_ratings", """
         CREATE VIEW tickets_ratings AS
@@ -172,7 +172,7 @@ views = {
             json(satisfaction_rating).id AS id,
         FROM
             tickets_raw;
-    """,["tickets_raw"], ["tickets_pk"]),
+    """, ["tickets_raw"], ["tickets_pk"]),
 
     TableMapping("tickets_metrics", """
         CREATE VIEW tickets_metrics AS
@@ -206,7 +206,7 @@ views = {
             json(metric_set).on_hold_time_in_minutes.business AS on_hold_time_in_minutes_business
         FROM
             tickets_raw;
-    """,["tickets_raw"], ["tickets_pk", "id"]),
+    """, ["tickets_raw"], ["tickets_pk", "id"]),
 
     TableMapping("tickets_fields", """
     CREATE VIEW tickets_fields AS
@@ -218,7 +218,7 @@ views = {
         tag AS tag
     FROM
         ticket_fields_raw;
-""", ["ticket_fields_raw"],["id"]),
+""", ["ticket_fields_raw"], ["id"]),
 
     TableMapping("tickets_comments", """
         CREATE VIEW tickets_comments AS
@@ -235,7 +235,7 @@ views = {
             ticket_id AS tickets_pk
         FROM
             ticket_comments_raw;
-    """,["ticket_comments_raw"], ["id"]),
+    """, ["ticket_comments_raw"], ["id"]),
 
     TableMapping("tickets_comments_attachments", """
         CREATE VIEW tickets_comments_attachments AS
@@ -251,7 +251,7 @@ views = {
             json(attachments).inline AS inline
         FROM
             ticket_comments_raw;
-    """,["ticket_comments_raw"], ["id"]),
+    """, ["ticket_comments_raw"], ["id"]),
 
     TableMapping("tickets_comments_attachments_thumbnails", """
         CREATE VIEW tickets_comments_attachments_thumbnails AS
@@ -267,7 +267,7 @@ views = {
             json(attachments).thumbnails.inline AS inline
         FROM
             ticket_comments_raw;
-    """,["ticket_comments_raw"], ["id"]),
+    """, ["ticket_comments_raw"], ["id"]),
 
     TableMapping("tickets_audits", """
         CREATE VIEW tickets_audits AS
@@ -279,5 +279,5 @@ views = {
             json(via).channel AS via_channel
         FROM
             ticket_audits_raw;
-    """,["ticket_audits_raw"], ["id"])
+    """, ["ticket_audits_raw"], ["id"])
 }
