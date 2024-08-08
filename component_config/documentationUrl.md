@@ -1,1 +1,1 @@
-git@github.com:keboola/component-zendesk.git/blob/master/README.md
+https://github.com/keboola/component-zendesk/blob/master/README.md
