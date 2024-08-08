@@ -1,1 +1,1 @@
-git@github.com:keboola/component-zendesk.git/blob/master/LICENSE.md
+https://github.com/keboola/component-zendesk/blob/master/LICENSE.md

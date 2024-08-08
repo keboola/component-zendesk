@@ -1,1 +1,1 @@
-git@github.com:keboola/component-zendesk.git
+https://github.com/keboola/component-zendesk
