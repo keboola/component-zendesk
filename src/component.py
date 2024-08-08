@@ -73,7 +73,7 @@ class Component(ComponentBase):
         # set the environment variables
         os.environ["DLT_DATA_DIR"] = DLT_TMP_DIR
         os.environ["RUNTIME__DLTHUB_TELEMETRY"] = "false"
-        os.environ["RUNTIME__LOG_LEVEL"] = self.params.dlt_debug
+        os.environ["RUNTIME__LOG_LEVEL"] = "DEBUG" if self.params.debug else "CRITICAL"
         os.environ["EXTRACT__WORKERS"] = "10"
         os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
         os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.sub_domain
@@ -147,11 +147,12 @@ class Component(ComponentBase):
             # export the view
             logging.info(f"Exporting view {view.name}")
             try:
-                export_query = f"""COPY '{view.name}' TO '{out_table.full_path}
-                                '(HEADER false, DELIMITER ',', FORCE_QUOTE *)"""
+                # ../data/out/tables/{view.name}.csv
+                export_query = f"""COPY '{view.name}' TO '{out_table.full_path}'
+                                                (HEADER false, DELIMITER ',', FORCE_QUOTE *)"""
                 self.connection.execute(export_query)
             except duckdb.ConversionException as e:
-                raise UserException(f"Error during query execution: {e}")
+                raise Exception(f"Error during query execution: {e}")
 
             # write the manifest
             self.write_manifest(out_table)

@@ -11,8 +11,6 @@ class Configuration(BaseModel):
     debug: bool = Field(default=False)
     destination_bucket: str = Field(default=None)
 
-    dlt_debug: str = "DEBUG" if debug else "INFO"
-
     def __init__(self, **data):
         try:
             super().__init__(**data)
