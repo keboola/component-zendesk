@@ -1,19 +1,21 @@
 import os
 import logging
 from collections import OrderedDict
+from typing import List
 
 import dlt
 from dlt.common import pendulum
 from dlt.common.time import ensure_pendulum_datetime
 from duckdb import duckdb
-from keboola.component.base import ComponentBase
+from keboola.component.base import ComponentBase, sync_action
 from keboola.component.dao import ColumnDefinition, BaseType, SupportedDataTypes
 from keboola.component.exceptions import UserException
+from keboola.component.sync_actions import SelectElement
+from kbcstorage.client import Client
 
 from configuration import Configuration
 
-from dlt_zendesk_client import zendesk_support
-from src.dlt_zendesk_client import zendesk_mapping
+from dlt_zendesk import zendesk_support, zendesk_mapping
 
 DLT_TMP_DIR = "/tmp/.dlt"
 DUCKDB_TMP_DIR = "/tmp/.dlt"
@@ -26,6 +28,7 @@ DEFAULT_START_DATE = pendulum.datetime(year=2000, month=1, day=1)
 class Component(ComponentBase):
     def __init__(self):
         super().__init__()
+        self.params = None
         self.pipeline_destination = None
         self.connection = None
         self.pipeline_name = None
@@ -35,7 +38,7 @@ class Component(ComponentBase):
         """
         Main execution code
         """
-        params = Configuration(**self.configuration.parameters)
+        self.params = Configuration(**self.configuration.parameters)
 
         # create the actual start time here for elimination possible data gaps
         actual_start = pendulum.now().int_timestamp
@@ -45,7 +48,7 @@ class Component(ComponentBase):
         load_from_iso: int = ensure_pendulum_datetime(previous_start).int_timestamp
 
         # set the DLT environment
-        self._set_dlt(params)
+        self._set_dlt()
 
         # run the pipeline
         loaded_tables = self._run_dlt_pipeline(load_from_iso)
@@ -62,7 +65,7 @@ class Component(ComponentBase):
         # save the state
         self.write_state_file({"time": {"previousStart": actual_start}})
 
-    def _set_dlt(self, params):
+    def _set_dlt(self):
         # prepare the temporary directories
         os.makedirs(DLT_TMP_DIR, exist_ok=True)
         os.makedirs(DUCKDB_TMP_DIR, exist_ok=True)
@@ -70,12 +73,12 @@ class Component(ComponentBase):
         # set the environment variables
         os.environ["DLT_DATA_DIR"] = DLT_TMP_DIR
         os.environ["RUNTIME__DLTHUB_TELEMETRY"] = "false"
-        os.environ["RUNTIME__LOG_LEVEL"] = params.dlt_debug
+        os.environ["RUNTIME__LOG_LEVEL"] = self.params.dlt_debug
         os.environ["EXTRACT__WORKERS"] = "10"
         os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
-        os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = params.sub_domain
-        os.environ["SOURCES__CREDENTIALS__EMAIL"] = params.email
-        os.environ["SOURCES__CREDENTIALS__TOKEN"] = params.api_token
+        os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.sub_domain
+        os.environ["SOURCES__CREDENTIALS__EMAIL"] = self.params.email
+        os.environ["SOURCES__CREDENTIALS__TOKEN"] = self.params.api_token
 
         # set the dataset and pipeline names
         self.dataset_name = DATASET_NAME
@@ -135,8 +138,11 @@ class Component(ComponentBase):
                                                          schema=schema,
                                                          primary_key=view.primary_key,
                                                          incremental=True,
-                                                         destination=view.name,
+                                                         destination=".".join(
+                                                             filter(None, [self.params.destination_bucket,
+                                                                           view.name])),
                                                          has_header=True,
+
                                                          )
             # export the view
             logging.info(f"Exporting view {view.name}")
@@ -170,6 +176,24 @@ class Component(ComponentBase):
 
     def _init_connection(self, duck_db_file):
         self.connection = duckdb.connect(duck_db_file)
+
+    def _get_kbc_root_url(self):
+        return f'https://{self.environment_variables.stack_id}'
+
+    def _get_storage_token(self) -> str:
+        return self.configuration.parameters.get('#storage_token') or self.environment_variables.token
+
+    @sync_action('get_buckets')
+    def get_buckets(self) -> List[SelectElement]:
+        """
+        Sync action for getting list of available buckets
+        Returns:
+            List[SelectElement]: List of available buckets
+        """
+        sapi_client = Client(self._get_kbc_root_url(), self._get_storage_token())
+
+        buckets = sapi_client.buckets.list()
+        return [SelectElement(value=b['id'], label=f'{b["id"]} ({b["name"]})') for b in buckets]
 
 
 """

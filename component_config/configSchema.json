@@ -23,6 +23,26 @@
             "title": "Sub domain",
             "propertyOrder": 3
         },
+        "destination_bucket": {
+          "type": "string",
+          "title": "Destination bucket",
+          "description": "If it is empty bucket will be created",
+          "enum": [],
+          "format": "select",
+          "options": {
+            "async": {
+              "label": "Load available buckets",
+              "action": "get_buckets"
+            },
+            "dependencies": {
+              "use_file_path": false
+            }
+          },
+          "uniqueItems": true,
+          "propertyOrder": 2,
+          "minItems": 1,
+          "maxItems": 1
+        },
         "debug": {
             "type": "boolean",
             "title": "Debug",

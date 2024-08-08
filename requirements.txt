@@ -7,3 +7,4 @@ psutil~=5.8.0
 dlt~=0.5.2
 dlt[duckdb]
 duckdb~=0.10.3
+kbcstorage~=0.9.1

@@ -9,6 +9,8 @@ class Configuration(BaseModel):
     api_token: str = Field(alias="#api_token")
     sub_domain: str = Field()
     debug: bool = Field(default=False)
+    destination_bucket: str = Field(default=None)
+
     dlt_debug: str = "DEBUG" if debug else "INFO"
 
     def __init__(self, **data):
