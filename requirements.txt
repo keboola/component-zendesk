@@ -3,6 +3,8 @@ keboola.utils==1.1.0
 freezegun~=1.5.1
 mock~=5.1.0
 pydantic~=2.8.2
+psutil~=5.8.0
 dlt~=0.5.2
 dlt[duckdb]
 duckdb~=0.10.3
+kbcstorage~=0.9.1
