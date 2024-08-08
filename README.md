@@ -1,34 +1,23 @@
 keboola.ex-zendesk-v2
 =============
 
-Description
-
-**Table of contents:**
-
-[TOC]
-
-Functionality notes
-===================
-
 Prerequisites
 =============
 
-Get the API token, register application, etc.
-
-Features
-========
-
-| **Feature**             | **Note**                                      |
-|-------------------------|-----------------------------------------------|
-| Generic UI form         | Dynamic UI form                               |
-| Row Based configuration | Allows structuring the configuration in rows. |
-| oAuth                   | oAuth authentication enabled                  |
-| Incremental loading     | Allows fetching data in new increments.       |
-| Backfill mode           | Support for seamless backfill setup.          |
-| Date range filter       | Specify date range.                           |
+[How to obtain API token](https://support.zendesk.com/hc/en-us/articles/4408889192858-Generating-a-new-API-token)
 
 Supported endpoints
 ===================
+
+    - /api/v2/users.json
+    - /api/v2/groups.json
+    - /api/v2/group_memberships.json
+    - /api/v2/organizations.json
+    - /api/v2/tags.json", Tags
+    - /api/v2/ticket_fields.json
+    - /api/v2/incremental/tickets.json
+    - /api/v2/tickets/{ticket['id']}/comments.json
+    - /api/v2/tickets/{ticket['id']}/audits.json
 
 If you need more endpoints, please submit your request to
 [ideas.keboola.com](https://ideas.keboola.com/)
@@ -36,16 +25,32 @@ If you need more endpoints, please submit your request to
 Configuration
 =============
 
-Param 1
--------
+### authentication
+- email
+- #api_token
+- sub_domain
 
-Param 2
--------
+### sync options
+- Full Sync downloads all data from the source every run
+- Incremental Sync downloads data (tickets, ticket_comments and ticket_audits) by parameter start_time described <a href='https://developer.zendesk.com/api-reference/ticketing/ticket-management/incremental_exports/#per_page'>here</a>. The start time is taken from the last successful run. 
+
+### destination
+#### load type
+- Full load is used, the destination table will be overwritten every run
+- incremental load is used, data will be upserted into the destination table. Tables with a primary key will have rows updated, tables without a primary key will have rows appended.
+
+### available details
+#### Details of tickets which will be loaded also. Details are loaded per ticket. It has an impact on performance.
+- Comments
+- Audits
+
+### debug
+#### If checked, the component will output more detailed information about the run.
 
 Output
 ======
 
-List of tables, foreign keys, schema.
+List of output tables is described [here](https://help.keboola.com/components/extractors/communication/zendesk/)
 
 Development
 -----------
