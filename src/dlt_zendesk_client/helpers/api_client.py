@@ -3,13 +3,15 @@ from typing import Dict, Iterator, Optional, Tuple, Any
 from dlt.common.typing import DictStrStr, TDataItems, TSecretValue
 from dlt.sources.helpers.requests import client
 
-from .. import settings
 from .credentials import (
     ZendeskCredentialsEmailPass,
     ZendeskCredentialsOAuth,
     ZendeskCredentialsToken,
     TZendeskCredentials,
 )
+
+PAGE_SIZE = 100
+INCREMENTAL_PAGE_SIZE = 1000
 
 
 class PaginationType(Enum):
@@ -86,11 +88,11 @@ class ZendeskAPIClient:
         # update the page size to enable cursor pagination
         params = params or {}
         if pagination == PaginationType.CURSOR:
-            params["page[size]"] = settings.PAGE_SIZE
+            params["page[size]"] = PAGE_SIZE
         elif pagination == PaginationType.STREAM:
-            params["per_page"] = settings.INCREMENTAL_PAGE_SIZE
+            params["per_page"] = INCREMENTAL_PAGE_SIZE
         elif pagination == PaginationType.START_TIME:
-            params["limit"] = settings.INCREMENTAL_PAGE_SIZE
+            params["limit"] = INCREMENTAL_PAGE_SIZE
 
         # make request and keep looping until there is no next page
         get_url = f"{self.url}{endpoint}"

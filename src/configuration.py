@@ -1,4 +1,5 @@
 import logging
+
 from pydantic import BaseModel, Field, ValidationError
 from keboola.component.exceptions import UserException
 
@@ -7,7 +8,8 @@ class Configuration(BaseModel):
     email: str = Field()
     api_token: str = Field(alias="#api_token")
     sub_domain: str = Field()
-    debug: bool = False
+    debug: bool = Field(default=False)
+    dlt_debug: str = "DEBUG" if debug else "INFO"
 
     def __init__(self, **data):
         try:
