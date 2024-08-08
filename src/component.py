@@ -17,8 +17,8 @@ from configuration import Configuration
 
 from dlt_zendesk import zendesk_support, zendesk_mapping
 
-DLT_TMP_DIR = "/tmp/.dlt"
-DUCKDB_TMP_DIR = "/tmp/.dlt"
+DLT_TMP_DIR = "./tmp/.dlt"
+DUCKDB_TMP_DIR = "./tmp/.dlt"
 DATASET_NAME = "zendesk_data"
 PIPELINE_NAME = "dlt_zendesk_pipeline"
 
