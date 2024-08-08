@@ -23,10 +23,43 @@
             "title": "Sub domain",
             "propertyOrder": 3
         },
+        "custom_bucket": {
+            "type": "boolean",
+            "title": "Custom output bucket",
+            "format": "checkbox",
+            "description": "By default bucket will be created",
+            "propertyOrder": 4
+        },
+        "destination_bucket": {
+            "type": "string",
+            "title": "Destination bucket",
+            "description": "Choice of destination bucket",
+            "enum": [],
+            "items": {
+                "enum": [],
+                "type": "string"
+            },
+            "format": "select",
+            "options": {
+                "async": {
+                    "label": "Load available buckets",
+                    "action": "get_buckets",
+                    "autoload": [
+                        "parameters.custom_bucket"
+                    ]
+                },
+                "dependencies": {
+                    "custom_bucket": true
+                }
+            },
+            "uniqueItems": true,
+            "propertyOrder": 5
+        },
         "debug": {
             "type": "boolean",
-            "title": "Debug",
-            "propertyOrder": 4
+            "title": "Debug Logging",
+            "format": "checkbox",
+            "propertyOrder": 6
         }
     }
 }
