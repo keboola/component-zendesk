@@ -206,7 +206,7 @@ views = {
             json(metric_set).on_hold_time_in_minutes.business AS on_hold_time_in_minutes_business
         FROM
             tickets_raw;
-    """, ["tickets_raw"], ["tickets_pk", "id"]),
+    """, ["tickets_raw"], ["ticket_id", "id"]),
 
     TableMapping("tickets_fields", """
     CREATE VIEW tickets_fields AS
