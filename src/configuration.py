@@ -1,15 +1,44 @@
 import logging
+from enum import Enum
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, computed_field
 from keboola.component.exceptions import UserException
 
 
-class Configuration(BaseModel):
+class Authentication(BaseModel):
     email: str = Field()
     api_token: str = Field(alias="#api_token")
     sub_domain: str = Field()
-    debug: bool = Field(default=False)
+
+
+class SyncOptions(BaseModel):
+    sync_mode: str
+
+    @computed_field
+    def is_incremental(self) -> bool:
+        return self.sync_mode == "incremental_sync"
+
+
+class Destination(BaseModel):
+    load_type: str
     destination_bucket: str = Field(default=None)
+
+    @computed_field
+    def is_incremental_load_type(self) -> bool:
+        return self.load_type == "incremental_load"
+
+
+class AvailableDetails(BaseModel):
+    ticket_comments_raw: bool
+    ticket_audits_raw: bool
+
+
+class Configuration(BaseModel):
+    authentication: Authentication
+    sync_options: SyncOptions
+    destination: Destination
+    available_details: AvailableDetails
+    debug: bool = Field(default=False)
 
     def __init__(self, **data):
         try:
