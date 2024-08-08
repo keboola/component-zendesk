@@ -177,7 +177,7 @@ views = {
     TableMapping("tickets_metrics", """
         CREATE VIEW tickets_metrics AS
         SELECT
-            id AS ticket_pk,
+            id AS tickets_pk,
             json(metric_set).id AS id,
             json(metric_set).ticket_id AS ticket_id,
             json(metric_set).created_at AS created_at,
