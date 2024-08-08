@@ -160,7 +160,7 @@ views = {
             id AS tickets_pk,
             json(custom_fields).value AS value,
             json(custom_fields).id AS tickets_fields_pk
-        FROM    
+        FROM
             tickets_raw;
     """, ["tickets_raw"], ["tickets_fields_pk", "tickets_pk"]),
 
