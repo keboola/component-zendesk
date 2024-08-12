@@ -80,7 +80,7 @@ class Organizations(BaseModel):
     organization_fields: Optional[object]
     shared_tickets: Optional[bool]
     shared_comments: Optional[bool]
-    external_id: Optional[int]
+    external_id: Optional[str]
     created_at: Optional[str]
     updated_at: Optional[str]
     domain_names: Optional[list] = Field(default=[])
