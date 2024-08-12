@@ -93,7 +93,7 @@ class Organizations(BaseModel):
 class Tickets(BaseModel):
     id: int
     url: Optional[str] = Field(default=None)
-    external_id: Optional[int] = Field(default=None)
+    external_id: Optional[str] = Field(default=None)
     type: Optional[str] = Field(default=None)
     subject: Optional[str] = Field(default=None)
     priority: Optional[str] = Field(default=None)
