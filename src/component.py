@@ -103,7 +103,7 @@ class Component(ComponentBase):
             pipeline_name=self.pipeline_name,
             destination=self.pipeline_destination,
             dataset_name=self.dataset_name,
-            progress="log",
+            progress=dlt.progress.log(60),
         )
 
         # filter the source by selected details
