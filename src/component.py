@@ -79,7 +79,7 @@ class Component(ComponentBase):
         os.environ["DLT_DATA_DIR"] = DLT_TMP_DIR
         os.environ["RUNTIME__DLTHUB_TELEMETRY"] = "false"
         os.environ["RUNTIME__LOG_LEVEL"] = "DEBUG" if self.params.debug else "CRITICAL"
-        # os.environ["EXTRACT__WORKERS"] = "10"
+        os.environ["EXTRACT__WORKERS"] = "10"
         # os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
         # os.environ["DATA_WRITER__FILE_MAX_BYTES"] = "256"
         os.environ["DATA_WRITER__BUFFER_MAX_ITEMS"] = "100"
