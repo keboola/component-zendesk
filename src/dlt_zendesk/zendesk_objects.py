@@ -40,7 +40,7 @@ class Users(BaseModel):
     shared: Optional[bool] = Field(default=None)
     shared_agent: Optional[bool] = Field(default=None)
     last_login_at: Optional[str] = Field(default=None)
-    two_factor_auth_enabled: Optional[str] = Field(default=None)
+    two_factor_auth_enabled: Optional[bool] = Field(default=None)
     signature: Optional[str] = Field(default=None)
     details: Optional[str] = Field(default=None)
     notes: Optional[str] = Field(default=None)
