@@ -17,8 +17,8 @@ from configuration import Configuration
 
 from dlt_zendesk import zendesk_support, zendesk_mapping
 
-DLT_TMP_DIR = "/tmp/.dlt"
-DUCKDB_TMP_DIR = "/tmp/.dlt"
+DLT_TMP_DIR = "./tmp/.dlt"
+DUCKDB_TMP_DIR = "./tmp/.dlt"
 DATASET_NAME = "zendesk_data"
 PIPELINE_NAME = "dlt_zendesk_pipeline"
 
@@ -76,16 +76,22 @@ class Component(ComponentBase):
         os.makedirs(DUCKDB_TMP_DIR, exist_ok=True)
 
         # set the environment variables
-        os.environ["DLT_DATA_DIR"] = DLT_TMP_DIR
-        os.environ["RUNTIME__DLTHUB_TELEMETRY"] = "false"
-        os.environ["RUNTIME__LOG_LEVEL"] = "DEBUG" if self.params.debug else "CRITICAL"
-        os.environ["EXTRACT__WORKERS"] = "10"
-        # os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
-        # os.environ["DATA_WRITER__FILE_MAX_BYTES"] = "256"
-        os.environ["DATA_WRITER__BUFFER_MAX_ITEMS"] = "100"
-        os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.authentication.sub_domain
-        os.environ["SOURCES__CREDENTIALS__EMAIL"] = self.params.authentication.email
-        os.environ["SOURCES__CREDENTIALS__TOKEN"] = self.params.authentication.api_token
+        dlt.config["dlt_data_dir"] = DLT_TMP_DIR
+        dlt.config["runtime.dlt_telemetry"] = "false"
+        dlt.config["runtime.log_level"] = "DEBUG" if self.params.debug else "CRITICAL"
+        # os.environ["EXTRACT__WORKERS"] = "10"
+        # os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "10"
+        # os.environ["DATA_WRITER__FILE_MAX_ITEMS"] = "10"
+        # os.environ["DATA_WRITER__BUFFER_MAX_ITEMS"] = "5"
+        # dlt.config["extract.buffer_max_items"] = "4"
+        # dlt.config["data_writer.file_max_items"] = "5"
+        # dlt.config["extract.file_max_items"] = "1"
+        # dlt.config["data_writer.file_max_bytes"] = "2"
+        # os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.authentication.sub_domain
+        # dlt.config["destination.duckdb.threads"] = "4"
+        dlt.secrets["sources.credentials.subdomain"] = self.params.authentication.sub_domain
+        dlt.secrets["sources.credentials.email"] = self.params.authentication.email
+        dlt.secrets["sources.credentials.token"] = self.params.authentication.api_token
 
         # set the dataset and pipeline names
         self.dataset_name = DATASET_NAME
@@ -95,7 +101,12 @@ class Component(ComponentBase):
         # check if the duckdb file exists delete it - especially for the local run
         if os.path.exists(self.duckdb_file):
             os.remove(self.duckdb_file)
-        self.pipeline_destination = dlt.destinations.duckdb(self.duckdb_file)
+        config = dict(threads="4",
+                      memory_limit="512MB",
+                      max_memory="512MB")
+        conn = duckdb.connect(self.duckdb_file, config=config)
+        # conn.sql("SET memory_limit='512MB';")
+        self.pipeline_destination = dlt.destinations.duckdb(conn)
 
     def _run_dlt_pipeline(self, start_date_iso) -> list:
         # prepare the pipeline
@@ -103,7 +114,7 @@ class Component(ComponentBase):
             pipeline_name=self.pipeline_name,
             destination=self.pipeline_destination,
             dataset_name=self.dataset_name,
-            progress=dlt.progress.log(60),
+            progress="log",
         )
 
         # filter the source by selected details
