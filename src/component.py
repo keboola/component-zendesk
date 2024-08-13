@@ -76,9 +76,12 @@ class Component(ComponentBase):
         os.makedirs(DUCKDB_TMP_DIR, exist_ok=True)
 
         # set the environment variables
-        dlt.config["dlt_data_dir"] = DLT_TMP_DIR
-        dlt.config["runtime.dlt_telemetry"] = "false"
-        dlt.config["runtime.log_level"] = "DEBUG" if self.params.debug else "CRITICAL"
+        os.environ["DLT_DATA_DIR"] = DLT_TMP_DIR
+        os.environ["RUNTIME__DLTHUB_TELEMETRY"] = "false"
+        os.environ["RUNTIME__LOG_LEVEL"] = "DEBUG" if self.params.debug else "CRITICAL"
+        os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.authentication.sub_domain
+        os.environ["SOURCES__CREDENTIALS__EMAIL"] = self.params.authentication.email
+        os.environ["SOURCES__CREDENTIALS__TOKEN"] = self.params.authentication.api_token
         # os.environ["EXTRACT__WORKERS"] = "10"
         # os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "10"
         # os.environ["DATA_WRITER__FILE_MAX_ITEMS"] = "10"
@@ -89,9 +92,7 @@ class Component(ComponentBase):
         # dlt.config["data_writer.file_max_bytes"] = "2"
         # os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.authentication.sub_domain
         # dlt.config["destination.duckdb.threads"] = "4"
-        dlt.secrets["sources.credentials.subdomain"] = self.params.authentication.sub_domain
-        dlt.secrets["sources.credentials.email"] = self.params.authentication.email
-        dlt.secrets["sources.credentials.token"] = self.params.authentication.api_token
+
 
         # set the dataset and pipeline names
         self.dataset_name = DATASET_NAME
