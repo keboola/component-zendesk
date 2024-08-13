@@ -93,7 +93,6 @@ class Component(ComponentBase):
         # os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.authentication.sub_domain
         # dlt.config["destination.duckdb.threads"] = "4"
 
-
         # set the dataset and pipeline names
         self.dataset_name = DATASET_NAME
         self.pipeline_name = PIPELINE_NAME
