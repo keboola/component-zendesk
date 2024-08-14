@@ -82,10 +82,12 @@ class Component(ComponentBase):
         os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.authentication.sub_domain
         os.environ["SOURCES__CREDENTIALS__EMAIL"] = self.params.authentication.email
         os.environ["SOURCES__CREDENTIALS__TOKEN"] = self.params.authentication.api_token
-        # os.environ["EXTRACT__WORKERS"] = "10"
-        # os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "10"
-        # os.environ["DATA_WRITER__FILE_MAX_ITEMS"] = "10"
-        # os.environ["DATA_WRITER__BUFFER_MAX_ITEMS"] = "5"
+        os.environ["EXTRACT__WORKERS"] = "10"
+        os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
+        os.environ["DATA_WRITER__FILE_MAX_ITEMS"] = "500"
+        os.environ["DATA_WRITER__BUFFER_MAX_ITEMS"] = "2000"
+        os.environ["RUNTIME__REQUEST_MAX_ATTEMPTS"] = "10"
+        os.environ["RUNTIME__REQUEST_BACKOFF_FACTOR"] = "1.5"
         # dlt.config["extract.buffer_max_items"] = "4"
         # dlt.config["data_writer.file_max_items"] = "5"
         # dlt.config["extract.file_max_items"] = "1"
@@ -101,11 +103,10 @@ class Component(ComponentBase):
         # check if the duckdb file exists delete it - especially for the local run
         if os.path.exists(self.duckdb_file):
             os.remove(self.duckdb_file)
-        config = dict(threads="4",
-                      memory_limit="512MB",
-                      max_memory="512MB")
+        config = dict(threads="6",
+                      memory_limit="1024MB",
+                      max_memory="1024MB")
         conn = duckdb.connect(self.duckdb_file, config=config)
-        # conn.sql("SET memory_limit='512MB';")
         self.pipeline_destination = dlt.destinations.duckdb(conn)
 
     def _run_dlt_pipeline(self, start_date_iso) -> list:
