@@ -1,3 +1,4 @@
+import logging
 from typing import Iterable, Iterator
 
 import dlt
@@ -38,23 +39,30 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
 
     def ticket_comments(tickets: Iterator[TDataItem]) -> Iterator[TDataItem]:
         for ticket in tickets:
-            comment_pages = zendesk_client.get_pages(
-                f"/api/v2/tickets/{ticket['id']}/comments.json",
-                "comments",
-                PaginationType.CURSOR,
-            )
-            for comments in comment_pages:
-                yield [dict(ticket_id=ticket['id'], **i) for i in comments]
+            # try if page not found write to log
+            try:
+                comment_pages = zendesk_client.get_pages(
+                    f"/api/v2/tickets/{ticket['id']}/comments.json",
+                    "comments",
+                    PaginationType.CURSOR,
+                )
+                for comments in comment_pages:
+                    yield [dict(ticket_id=ticket['id'], **i) for i in comments]
+            except Exception as e:
+                logging.warning(f"Ticket {ticket['id']} comments not found {e}")
 
     def ticket_audits(tickets: Iterator[TDataItem]) -> Iterator[TDataItem]:
         for ticket in tickets:
-            audit_pages = zendesk_client.get_pages(
-                f"/api/v2/tickets/{ticket['id']}/audits.json",
-                "audits",
-                PaginationType.CURSOR,
-            )
-            for audits in audit_pages:
-                yield audits
+            try:
+                audit_pages = zendesk_client.get_pages(
+                    f"/api/v2/tickets/{ticket['id']}/audits.json",
+                    "audits",
+                    PaginationType.CURSOR,
+                )
+                for audits in audit_pages:
+                    yield audits
+            except Exception as e:
+                logging.warning(f"Ticket {ticket['id']} audits not found {e}")
 
     # Authenticate
     zendesk_client = ZendeskAPIClient(credentials)

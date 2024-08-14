@@ -1,5 +1,6 @@
 import os
 import logging
+import sys
 from collections import OrderedDict
 from typing import List
 
@@ -23,6 +24,13 @@ DATASET_NAME = "zendesk_data"
 PIPELINE_NAME = "dlt_zendesk_pipeline"
 
 DEFAULT_START_DATE = pendulum.datetime(year=2000, month=1, day=1)
+
+
+# Vytvoření vlastního StreamHandler s automatickým flushováním
+class FlushingStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        super().emit(record)
+        self.flush()
 
 
 class Component(ComponentBase):
@@ -82,12 +90,12 @@ class Component(ComponentBase):
         os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.authentication.sub_domain
         os.environ["SOURCES__CREDENTIALS__EMAIL"] = self.params.authentication.email
         os.environ["SOURCES__CREDENTIALS__TOKEN"] = self.params.authentication.api_token
-        os.environ["EXTRACT__WORKERS"] = "10"
-        os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
-        os.environ["DATA_WRITER__FILE_MAX_ITEMS"] = "500"
-        os.environ["DATA_WRITER__BUFFER_MAX_ITEMS"] = "2000"
-        os.environ["RUNTIME__REQUEST_MAX_ATTEMPTS"] = "10"
-        os.environ["RUNTIME__REQUEST_BACKOFF_FACTOR"] = "1.5"
+        # os.environ["EXTRACT__WORKERS"] = "10"
+        # os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
+        # os.environ["DATA_WRITER__FILE_MAX_ITEMS"] = "500"
+        # os.environ["DATA_WRITER__BUFFER_MAX_ITEMS"] = "2000"
+        # os.environ["RUNTIME__REQUEST_MAX_ATTEMPTS"] = "10"
+        # os.environ["RUNTIME__REQUEST_BACKOFF_FACTOR"] = "1.5"
         # dlt.config["extract.buffer_max_items"] = "4"
         # dlt.config["data_writer.file_max_items"] = "5"
         # dlt.config["extract.file_max_items"] = "1"
@@ -229,6 +237,15 @@ class Component(ComponentBase):
 """
 if __name__ == "__main__":
     try:
+        # Nastavení loggeru pro 'dlt.progress'
+        logger = logging.getLogger('dlt.progress')
+        logger.setLevel(logging.INFO)  # nebo jiná úroveň podle potřeby
+
+        # Vytvoření handleru a jeho přidání k loggeru
+        handler = FlushingStreamHandler(sys.stdout)
+        formatter = logging.Formatter('%(asctime)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
         comp = Component()
         # this triggers the run method by default and is controlled by the configuration.action parameter
         comp.execute_action()
