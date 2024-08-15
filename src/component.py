@@ -22,7 +22,7 @@ DUCKDB_TMP_DIR = "/tmp/.dlt"
 DATASET_NAME = "zendesk_data"
 PIPELINE_NAME = "dlt_zendesk_pipeline"
 
-DEFAULT_START_DATE = pendulum.datetime(year=2000, month=1, day=1)
+DEFAULT_START_DATE: int = pendulum.datetime(year=2000, month=1, day=1).int_timestamp
 
 
 class Component(ComponentBase):
@@ -45,12 +45,13 @@ class Component(ComponentBase):
 
         # get the previous start time
         if self.params.sync_options.is_incremental:
-            previous_start = self.get_state_file().get("time", {}).get("previousStart", DEFAULT_START_DATE)
-            logging.info(f"Incremental load mode - previous start date is {previous_start}")
+            previous_start: int = self.get_state_file().get("time", {}).get("previousStart", DEFAULT_START_DATE)
+            logging.info("Incremental mode")
         else:
             previous_start = DEFAULT_START_DATE
-            logging.info(f"Full sync mode load is disabled - starting from the default date {previous_start}")
+            logging.info("Full sync mode load is disabled")
         load_from_iso: int = ensure_pendulum_datetime(previous_start).int_timestamp
+        logging.info(f"Loading data from {pendulum.from_timestamp(load_from_iso)}")
 
         # set the DLT environment
         self._set_dlt()
