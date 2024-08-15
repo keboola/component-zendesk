@@ -27,6 +27,7 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
     ]
 
     def ticket_table() -> Iterator[TDataItem]:
+        logging.info("Loading tickets")
         ticket_pages = zendesk_client.get_pages(
             "/api/v2/incremental/tickets.json",
             "tickets",
@@ -38,6 +39,7 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
             yield page
 
     def ticket_comments(tickets: Iterator[TDataItem]) -> Iterator[TDataItem]:
+        logging.info("Loading ticket comments")
         for ticket in tickets:
             # try if page not found write to log
             try:
@@ -52,6 +54,7 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
                 logging.warning(f"Ticket {ticket['id']} comments not found {e}")
 
     def ticket_audits(tickets: Iterator[TDataItem]) -> Iterator[TDataItem]:
+        logging.info("Loading ticket audits")
         for ticket in tickets:
             try:
                 audit_pages = zendesk_client.get_pages(
@@ -88,6 +91,7 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
 
 def _basic_resource(zendesk_client: ZendeskAPIClient, endpoint_url: str, data_key: str) -> \
         Iterator[TDataItem]:
+    logging.info(f"Loading {data_key}")
     pages = zendesk_client.get_pages(
         endpoint_url,
         data_key,

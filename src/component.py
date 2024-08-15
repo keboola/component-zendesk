@@ -26,13 +26,6 @@ PIPELINE_NAME = "dlt_zendesk_pipeline"
 DEFAULT_START_DATE = pendulum.datetime(year=2000, month=1, day=1)
 
 
-# Vytvoření vlastního StreamHandler s automatickým flushováním
-class FlushingStreamHandler(logging.StreamHandler):
-    def emit(self, record):
-        super().emit(record)
-        self.flush()
-
-
 class Component(ComponentBase):
     def __init__(self):
         super().__init__()
@@ -76,6 +69,7 @@ class Component(ComponentBase):
         self._export_views(views_to_export)
 
         # save the state
+        logging.info(f"Saving the state file with the actual start date {actual_start}")
         self.write_state_file({"time": {"previousStart": actual_start}})
 
     def _set_dlt(self):
@@ -90,18 +84,10 @@ class Component(ComponentBase):
         os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.authentication.sub_domain
         os.environ["SOURCES__CREDENTIALS__EMAIL"] = self.params.authentication.email
         os.environ["SOURCES__CREDENTIALS__TOKEN"] = self.params.authentication.api_token
-        # os.environ["EXTRACT__WORKERS"] = "10"
-        # os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
-        # os.environ["DATA_WRITER__FILE_MAX_ITEMS"] = "500"
-        # os.environ["DATA_WRITER__BUFFER_MAX_ITEMS"] = "2000"
-        # os.environ["RUNTIME__REQUEST_MAX_ATTEMPTS"] = "10"
-        # os.environ["RUNTIME__REQUEST_BACKOFF_FACTOR"] = "1.5"
-        # dlt.config["extract.buffer_max_items"] = "4"
-        # dlt.config["data_writer.file_max_items"] = "5"
-        # dlt.config["extract.file_max_items"] = "1"
-        # dlt.config["data_writer.file_max_bytes"] = "2"
-        # os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.authentication.sub_domain
-        # dlt.config["destination.duckdb.threads"] = "4"
+        os.environ["EXTRACT__WORKERS"] = "40"
+        os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
+        os.environ["NORMALIZE__WORKERS"] = "40"
+        os.environ["LOAD__WORKERS"] = "40"
 
         # set the dataset and pipeline names
         self.dataset_name = DATASET_NAME
@@ -111,31 +97,39 @@ class Component(ComponentBase):
         # check if the duckdb file exists delete it - especially for the local run
         if os.path.exists(self.duckdb_file):
             os.remove(self.duckdb_file)
+        # set the duckdb connection
         config = dict(threads="6",
                       memory_limit="1024MB",
                       max_memory="1024MB")
+
         conn = duckdb.connect(self.duckdb_file, config=config)
         self.pipeline_destination = dlt.destinations.duckdb(conn)
 
     def _run_dlt_pipeline(self, start_date_iso) -> list:
         # prepare the pipeline
+        logging.info("Preparing DLT pipeline")
         pipeline = dlt.pipeline(
             pipeline_name=self.pipeline_name,
             destination=self.pipeline_destination,
             dataset_name=self.dataset_name,
             progress="log",
+
         )
 
         # filter the source by selected details
+        logging.info("Filtering the source by selected details")
         source = zendesk_support(start_date_iso)
         for key, value in self.params.available_details.dict().items():
             source.resources[key].selected = value
 
         # run the pipeline
+        logging.info("Running the DLT pipeline")
         pipeline = pipeline.run(source, refresh="drop_sources")
+        logging.info("Pipeline finished")
         pipeline.raise_on_failed_jobs()
 
         # get the loaded tables
+        logging.debug("Getting the loaded tables")
         loaded_tables = []
         for package in pipeline.load_packages:
             jobs = package.jobs.get("completed_jobs", [])
@@ -147,6 +141,7 @@ class Component(ComponentBase):
         return loaded_tables
 
     def _prepare_views(self, loaded_tables):
+        logging.info("Preparing output views")
         # set the database
         self.connection.execute(f"USE {self.dataset_name};")
 
@@ -163,6 +158,7 @@ class Component(ComponentBase):
         return prepared_views
 
     def _export_views(self, views):
+        logging.info("Exporting views to CSV")
         for view in views:
             # get the schema of the view
             table_meta = self.connection.execute(f"""DESCRIBE {view.name};""").fetchall()
@@ -211,6 +207,7 @@ class Component(ComponentBase):
             return SupportedDataTypes.STRING
 
     def _init_connection(self, duck_db_file):
+        logging.debug(f"Initializing connection to DuckDB database {duck_db_file}")
         self.connection = duckdb.connect(duck_db_file)
 
     def _get_kbc_root_url(self):
@@ -237,15 +234,6 @@ class Component(ComponentBase):
 """
 if __name__ == "__main__":
     try:
-        # Nastavení loggeru pro 'dlt.progress'
-        logger = logging.getLogger('dlt.progress')
-        logger.setLevel(logging.INFO)  # nebo jiná úroveň podle potřeby
-
-        # Vytvoření handleru a jeho přidání k loggeru
-        handler = FlushingStreamHandler(sys.stdout)
-        formatter = logging.Formatter('%(asctime)s - %(message)s')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
         comp = Component()
         # this triggers the run method by default and is controlled by the configuration.action parameter
         comp.execute_action()
