@@ -22,7 +22,7 @@ DUCKDB_TMP_DIR = "/tmp/.dlt"
 DATASET_NAME = "zendesk_data"
 PIPELINE_NAME = "dlt_zendesk_pipeline"
 
-DEFAULT_START_DATE = pendulum.datetime(year=2000, month=1, day=1)
+DEFAULT_START_DATE: int = pendulum.datetime(year=2000, month=1, day=1).int_timestamp
 
 
 class Component(ComponentBase):
@@ -45,12 +45,13 @@ class Component(ComponentBase):
 
         # get the previous start time
         if self.params.sync_options.is_incremental:
-            previous_start = self.get_state_file().get("time", {}).get("previousStart", DEFAULT_START_DATE)
-            logging.info(f"Incremental load mode - previous start date is {previous_start}")
+            previous_start: int = self.get_state_file().get("time", {}).get("previousStart", DEFAULT_START_DATE)
+            logging.info("Incremental mode")
         else:
             previous_start = DEFAULT_START_DATE
-            logging.info(f"Full sync mode load is disabled - starting from the default date {previous_start}")
+            logging.info("Full sync mode load is disabled")
         load_from_iso: int = ensure_pendulum_datetime(previous_start).int_timestamp
+        logging.info(f"Loading data from {pendulum.from_timestamp(load_from_iso)}")
 
         # set the DLT environment
         self._set_dlt()
@@ -68,6 +69,7 @@ class Component(ComponentBase):
         self._export_views(views_to_export)
 
         # save the state
+        logging.info(f"Saving the state file with the actual start date {actual_start}")
         self.write_state_file({"time": {"previousStart": actual_start}})
 
     def _set_dlt(self):
@@ -79,11 +81,13 @@ class Component(ComponentBase):
         os.environ["DLT_DATA_DIR"] = DLT_TMP_DIR
         os.environ["RUNTIME__DLTHUB_TELEMETRY"] = "false"
         os.environ["RUNTIME__LOG_LEVEL"] = "DEBUG" if self.params.debug else "CRITICAL"
-        os.environ["EXTRACT__WORKERS"] = "10"
-        os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
         os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.authentication.sub_domain
         os.environ["SOURCES__CREDENTIALS__EMAIL"] = self.params.authentication.email
         os.environ["SOURCES__CREDENTIALS__TOKEN"] = self.params.authentication.api_token
+        os.environ["EXTRACT__WORKERS"] = "40"
+        os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
+        os.environ["NORMALIZE__WORKERS"] = "40"
+        os.environ["LOAD__WORKERS"] = "40"
 
         # set the dataset and pipeline names
         self.dataset_name = DATASET_NAME
@@ -93,27 +97,39 @@ class Component(ComponentBase):
         # check if the duckdb file exists delete it - especially for the local run
         if os.path.exists(self.duckdb_file):
             os.remove(self.duckdb_file)
-        self.pipeline_destination = dlt.destinations.duckdb(self.duckdb_file)
+        # set the duckdb connection
+        config = dict(threads="6",
+                      memory_limit="1024MB",
+                      max_memory="1024MB")
+
+        conn = duckdb.connect(self.duckdb_file, config=config)
+        self.pipeline_destination = dlt.destinations.duckdb(conn)
 
     def _run_dlt_pipeline(self, start_date_iso) -> list:
         # prepare the pipeline
+        logging.info("Preparing DLT pipeline")
         pipeline = dlt.pipeline(
             pipeline_name=self.pipeline_name,
             destination=self.pipeline_destination,
             dataset_name=self.dataset_name,
             progress="log",
+
         )
 
         # filter the source by selected details
+        logging.info("Filtering the source by selected details")
         source = zendesk_support(start_date_iso)
         for key, value in self.params.available_details.dict().items():
             source.resources[key].selected = value
 
         # run the pipeline
+        logging.info("Running the DLT pipeline")
         pipeline = pipeline.run(source, refresh="drop_sources")
+        logging.info("Pipeline finished")
         pipeline.raise_on_failed_jobs()
 
         # get the loaded tables
+        logging.debug("Getting the loaded tables")
         loaded_tables = []
         for package in pipeline.load_packages:
             jobs = package.jobs.get("completed_jobs", [])
@@ -125,6 +141,7 @@ class Component(ComponentBase):
         return loaded_tables
 
     def _prepare_views(self, loaded_tables):
+        logging.info("Preparing output views")
         # set the database
         self.connection.execute(f"USE {self.dataset_name};")
 
@@ -141,6 +158,7 @@ class Component(ComponentBase):
         return prepared_views
 
     def _export_views(self, views):
+        logging.info("Exporting views to CSV")
         for view in views:
             # get the schema of the view
             table_meta = self.connection.execute(f"""DESCRIBE {view.name};""").fetchall()
@@ -189,6 +207,7 @@ class Component(ComponentBase):
             return SupportedDataTypes.STRING
 
     def _init_connection(self, duck_db_file):
+        logging.debug(f"Initializing connection to DuckDB database {duck_db_file}")
         self.connection = duckdb.connect(duck_db_file)
 
     def _get_kbc_root_url(self):

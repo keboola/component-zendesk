@@ -1,6 +1,8 @@
+import logging
 from typing import Iterable, Iterator
 
 import dlt
+import pendulum
 
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
@@ -17,15 +19,43 @@ from .zendesk_objects import (Tags, Tickets, TicketComments, TicketAudits, Users
 def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.secrets.value) \
         -> Iterable[DltResource]:
     supported_endpoints = [
-        ("users", "/api/v2/users.json", Users),
         ("groups", "/api/v2/groups.json", Groups),
         ("group_memberships", "/api/v2/group_memberships.json", GroupMembership),
-        ("organizations", "/api/v2/organizations.json", Organizations),
         ("tags", "/api/v2/tags.json", Tags),
         ("ticket_fields", "/api/v2/ticket_fields.json", TicketsFields),
     ]
 
+    @dlt.resource(name="organizations_raw", parallelized=True, columns=Organizations, write_disposition="replace")
+    def organizations() -> Iterator[TDataItem]:
+        dt = pendulum.from_timestamp(start_date_iso)
+        from_date = dt.format('YYYY-MM-DD')
+
+        logging.info("Loading Organizations")
+        user_pages = zendesk_client.get_pages(
+            "/api/v2/search.json",
+            "results",
+            PaginationType.OFFSET,
+            params={"query": f"type:organization updated>{from_date}"},
+        )
+        yield from user_pages
+
+    @dlt.resource(name="users_raw", parallelized=True, columns=Users, write_disposition="replace")
+    def users() -> Iterator[TDataItem]:
+        dt = pendulum.from_timestamp(start_date_iso)
+        from_date = dt.format('YYYY-MM-DD')
+
+        logging.info("Loading users")
+        user_pages = zendesk_client.get_pages(
+            "/api/v2/users/search.json",
+            "users",
+            PaginationType.OFFSET,
+            params={"query": f"type:user updated>{from_date}"},
+        )
+        yield from user_pages
+
+    @dlt.resource(name="tickets_raw", parallelized=True, columns=Tickets, write_disposition="replace")
     def ticket_table() -> Iterator[TDataItem]:
+        logging.info("Loading tickets")
         ticket_pages = zendesk_client.get_pages(
             "/api/v2/incremental/tickets.json",
             "tickets",
@@ -33,40 +63,49 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
             params={"include": "metric_sets,comment_count",
                     "start_time": start_date_iso},
         )
-        for page in ticket_pages:
-            yield page
+        yield from ticket_pages
 
-    def ticket_comments(tickets: Iterator[TDataItem]) -> Iterator[TDataItem]:
+    @dlt.transformer(name="ticket_comments_raw", parallelized=True, columns=TicketComments)
+    def ticket_comments(tickets: Iterator[TDataItem]):
+        logging.info("Loading ticket comments")
         for ticket in tickets:
-            comment_pages = zendesk_client.get_pages(
-                f"/api/v2/tickets/{ticket['id']}/comments.json",
-                "comments",
-                PaginationType.CURSOR,
-            )
-            for comments in comment_pages:
-                yield [dict(ticket_id=ticket['id'], **i) for i in comments]
+            # try if page not found write to log
+            try:
+                comment_pages = zendesk_client.get_pages(
+                    f"/api/v2/tickets/{ticket['id']}/comments.json",
+                    "comments",
+                    PaginationType.CURSOR,
+                )
+                for comments in comment_pages:
+                    yield [dict(ticket_id=ticket['id'], **i) for i in comments]
+            except Exception as e:
+                logging.warning(f"Ticket {ticket['id']} comments not found {e}")
 
-    def ticket_audits(tickets: Iterator[TDataItem]) -> Iterator[TDataItem]:
+    @dlt.transformer(name="ticket_audits_raw", parallelized=True, columns=TicketAudits)
+    def ticket_audits(tickets: Iterator[TDataItem]):
+        logging.info("Loading ticket audits")
         for ticket in tickets:
-            audit_pages = zendesk_client.get_pages(
-                f"/api/v2/tickets/{ticket['id']}/audits.json",
-                "audits",
-                PaginationType.CURSOR,
-            )
-            for audits in audit_pages:
-                yield audits
+            try:
+                audit_pages = zendesk_client.get_pages(
+                    f"/api/v2/tickets/{ticket['id']}/audits.json",
+                    "audits",
+                    PaginationType.CURSOR,
+                )
+                for audits in audit_pages:
+                    yield audits
+            except Exception as e:
+                logging.warning(f"Ticket {ticket['id']} audits not found {e}")
 
     # Authenticate
     zendesk_client = ZendeskAPIClient(credentials)
 
     # loading base tables
     resource_list = [
-        dlt.resource(ticket_table(), name="tickets_raw", parallelized=True, columns=Tickets,
-                     write_disposition="replace"),
-        ticket_table() | dlt.transformer(ticket_comments, name="ticket_comments_raw", parallelized=True,
-                                         columns=TicketComments),
-        ticket_table() | dlt.transformer(ticket_audits, name="ticket_audits_raw", parallelized=True,
-                                         columns=TicketAudits)
+        organizations,
+        users,
+        ticket_table,
+        ticket_table | ticket_comments,
+        ticket_table | ticket_audits
     ]
     # other tables to be loaded
     for resource, endpoint_url, columns in list(supported_endpoints):
@@ -80,6 +119,7 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
 
 def _basic_resource(zendesk_client: ZendeskAPIClient, endpoint_url: str, data_key: str) -> \
         Iterator[TDataItem]:
+    logging.info(f"Loading {data_key}")
     pages = zendesk_client.get_pages(
         endpoint_url,
         data_key,

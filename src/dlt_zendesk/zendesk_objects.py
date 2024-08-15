@@ -40,7 +40,7 @@ class Users(BaseModel):
     shared: Optional[bool] = Field(default=None)
     shared_agent: Optional[bool] = Field(default=None)
     last_login_at: Optional[str] = Field(default=None)
-    two_factor_auth_enabled: Optional[str] = Field(default=None)
+    two_factor_auth_enabled: Optional[bool] = Field(default=None)
     signature: Optional[str] = Field(default=None)
     details: Optional[str] = Field(default=None)
     notes: Optional[str] = Field(default=None)
@@ -80,7 +80,7 @@ class Organizations(BaseModel):
     organization_fields: Optional[object]
     shared_tickets: Optional[bool]
     shared_comments: Optional[bool]
-    external_id: Optional[int]
+    external_id: Optional[str]
     created_at: Optional[str]
     updated_at: Optional[str]
     domain_names: Optional[list] = Field(default=[])
@@ -93,7 +93,7 @@ class Organizations(BaseModel):
 class Tickets(BaseModel):
     id: int
     url: Optional[str] = Field(default=None)
-    external_id: Optional[int] = Field(default=None)
+    external_id: Optional[str] = Field(default=None)
     type: Optional[str] = Field(default=None)
     subject: Optional[str] = Field(default=None)
     priority: Optional[str] = Field(default=None)
