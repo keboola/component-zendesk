@@ -26,6 +26,7 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
         ("ticket_fields", "/api/v2/ticket_fields.json", TicketsFields),
     ]
 
+    @dlt.resource(name="tickets_raw", parallelized=True, columns=Tickets, write_disposition="replace")
     def ticket_table() -> Iterator[TDataItem]:
         logging.info("Loading tickets")
         ticket_pages = zendesk_client.get_pages(
@@ -38,7 +39,8 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
         for page in ticket_pages:
             yield page
 
-    def ticket_comments(tickets: Iterator[TDataItem]) -> Iterator[TDataItem]:
+    @dlt.transformer(name="ticket_comments_raw", parallelized=True, columns=TicketComments)
+    def ticket_comments(tickets: Iterator[TDataItem]):
         logging.info("Loading ticket comments")
         for ticket in tickets:
             # try if page not found write to log
@@ -53,7 +55,8 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
             except Exception as e:
                 logging.warning(f"Ticket {ticket['id']} comments not found {e}")
 
-    def ticket_audits(tickets: Iterator[TDataItem]) -> Iterator[TDataItem]:
+    @dlt.transformer(name="ticket_audits_raw", parallelized=True, columns=TicketAudits)
+    def ticket_audits(tickets: Iterator[TDataItem]):
         logging.info("Loading ticket audits")
         for ticket in tickets:
             try:
@@ -72,12 +75,9 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
 
     # loading base tables
     resource_list = [
-        dlt.resource(ticket_table(), name="tickets_raw", parallelized=True, columns=Tickets,
-                     write_disposition="replace"),
-        ticket_table() | dlt.transformer(ticket_comments, name="ticket_comments_raw", parallelized=True,
-                                         columns=TicketComments),
-        ticket_table() | dlt.transformer(ticket_audits, name="ticket_audits_raw", parallelized=True,
-                                         columns=TicketAudits)
+        ticket_table,
+        ticket_table | ticket_comments,
+        ticket_table | ticket_audits
     ]
     # other tables to be loaded
     for resource, endpoint_url, columns in list(supported_endpoints):
