@@ -31,7 +31,7 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
         dt = pendulum.from_timestamp(start_date_iso)
         from_date = dt.format('YYYY-MM-DD')
 
-        logging.info(f"Loading users")
+        logging.info("Loading users")
         user_pages = zendesk_client.get_pages(
             "/api/v2/users/search.json",
             "users",
