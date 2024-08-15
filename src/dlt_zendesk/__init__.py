@@ -2,6 +2,7 @@ import logging
 from typing import Iterable, Iterator
 
 import dlt
+import pendulum
 
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
@@ -18,13 +19,26 @@ from .zendesk_objects import (Tags, Tickets, TicketComments, TicketAudits, Users
 def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.secrets.value) \
         -> Iterable[DltResource]:
     supported_endpoints = [
-        ("users", "/api/v2/users.json", Users),
         ("groups", "/api/v2/groups.json", Groups),
         ("group_memberships", "/api/v2/group_memberships.json", GroupMembership),
         ("organizations", "/api/v2/organizations.json", Organizations),
         ("tags", "/api/v2/tags.json", Tags),
         ("ticket_fields", "/api/v2/ticket_fields.json", TicketsFields),
     ]
+
+    @dlt.resource(name="users_raw", parallelized=True, columns=Users, write_disposition="replace")
+    def users() -> Iterator[TDataItem]:
+        dt = pendulum.from_timestamp(start_date_iso)
+        from_date = dt.format('YYYY-MM-DD')
+
+        logging.info(f"Loading users")
+        user_pages = zendesk_client.get_pages(
+            "/api/v2/users/search.json",
+            "users",
+            PaginationType.OFFSET,
+            params={"query": f"type:user updated>{from_date}"},
+        )
+        yield from user_pages
 
     @dlt.resource(name="tickets_raw", parallelized=True, columns=Tickets, write_disposition="replace")
     def ticket_table() -> Iterator[TDataItem]:
@@ -36,8 +50,7 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
             params={"include": "metric_sets,comment_count",
                     "start_time": start_date_iso},
         )
-        for page in ticket_pages:
-            yield page
+        yield from ticket_pages
 
     @dlt.transformer(name="ticket_comments_raw", parallelized=True, columns=TicketComments)
     def ticket_comments(tickets: Iterator[TDataItem]):
@@ -75,6 +88,7 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
 
     # loading base tables
     resource_list = [
+        users,
         ticket_table,
         ticket_table | ticket_comments,
         ticket_table | ticket_audits
