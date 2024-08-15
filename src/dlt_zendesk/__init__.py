@@ -21,10 +21,23 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
     supported_endpoints = [
         ("groups", "/api/v2/groups.json", Groups),
         ("group_memberships", "/api/v2/group_memberships.json", GroupMembership),
-        ("organizations", "/api/v2/organizations.json", Organizations),
         ("tags", "/api/v2/tags.json", Tags),
         ("ticket_fields", "/api/v2/ticket_fields.json", TicketsFields),
     ]
+
+    @dlt.resource(name="organizations_raw", parallelized=True, columns=Organizations, write_disposition="replace")
+    def organizations() -> Iterator[TDataItem]:
+        dt = pendulum.from_timestamp(start_date_iso)
+        from_date = dt.format('YYYY-MM-DD')
+
+        logging.info("Loading Organizations")
+        user_pages = zendesk_client.get_pages(
+            "/api/v2/search.json",
+            "results",
+            PaginationType.OFFSET,
+            params={"query": f"type:organization updated>{from_date}"},
+        )
+        yield from user_pages
 
     @dlt.resource(name="users_raw", parallelized=True, columns=Users, write_disposition="replace")
     def users() -> Iterator[TDataItem]:
@@ -88,6 +101,7 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
 
     # loading base tables
     resource_list = [
+        organizations,
         users,
         ticket_table,
         ticket_table | ticket_comments,
