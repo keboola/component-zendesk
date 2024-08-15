@@ -1,6 +1,5 @@
 import os
 import logging
-import sys
 from collections import OrderedDict
 from typing import List
 
