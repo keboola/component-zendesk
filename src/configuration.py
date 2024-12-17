@@ -12,6 +12,7 @@ class Authentication(BaseModel):
 
 class SyncOptions(BaseModel):
     sync_mode: str
+    date_from: str = Field(default=None)
 
     @computed_field
     def is_incremental(self) -> bool:

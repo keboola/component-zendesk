@@ -78,7 +78,18 @@
                     },
                     "required": true,
                     "description": "Full Sync downloads all data from the source every run, Incremental Sync downloads data (tickets, ticket_comments and ticket_audits) by parameter start_time described <a href='https://developer.zendesk.com/api-reference/ticketing/ticket-management/incremental_exports/#per_page'>here</a>. The start time is taken from the last successful run.",
-                    "propertyOrder": 20
+                    "propertyOrder": 10
+                },
+                "date_from": {
+                    "propertyOrder": 20,
+                    "type": "string",
+                    "title": "From date",
+                    "description": "Date from. Date in YYYY-MM-DD format or a string i.e. 5 days ago, 1 month ago, yesterday, etc. If left empty, all records from 2000-01-01 are downloaded.",
+                    "options": {
+                        "dependencies": {
+                            "sync_mode": "incremental_sync"
+                        }
+                    }
                 }
             }
         },
