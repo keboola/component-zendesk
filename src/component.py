@@ -3,6 +3,7 @@ import logging
 from collections import OrderedDict
 from typing import List
 
+import dateparser
 import dlt
 from dlt.common import pendulum
 from dlt.common.time import ensure_pendulum_datetime
@@ -17,8 +18,8 @@ from configuration import Configuration
 
 from dlt_zendesk import zendesk_support, zendesk_mapping
 
-DLT_TMP_DIR = "/tmp/.dlt"
-DUCKDB_TMP_DIR = "/tmp/.dlt"
+DLT_TMP_DIR = "./tmp/.dlt"
+DUCKDB_TMP_DIR = "./tmp/.dlt"
 DATASET_NAME = "zendesk_data"
 PIPELINE_NAME = "dlt_zendesk_pipeline"
 
@@ -45,7 +46,7 @@ class Component(ComponentBase):
 
         # get the previous start time
         if self.params.sync_options.is_incremental:
-            previous_start: int = self.get_state_file().get("time", {}).get("previousStart", DEFAULT_START_DATE)
+            previous_start = self._def_start_timestamp()
             logging.info("Incremental mode")
         else:
             previous_start = DEFAULT_START_DATE
@@ -71,6 +72,23 @@ class Component(ComponentBase):
         # save the state
         logging.info(f"Saving the state file with the actual start date {actual_start}")
         self.write_state_file({"time": {"previousStart": actual_start}})
+
+    def _def_start_timestamp(self):
+        if self.params.sync_options.date_from:
+            return self._parse_date(self.params.sync_options.date_from)
+        else:
+            return int(self.get_state_file().get("time", {}).get("previousStart", DEFAULT_START_DATE))
+
+    @staticmethod
+    def _parse_date(date_to_parse: str) -> int:
+        try:
+            parsed_date = dateparser.parse(date_to_parse)
+            if parsed_date.tzinfo is None:
+                parsed_date = parsed_date.replace(tzinfo=pendulum.UTC)
+            return int(parsed_date.timestamp())
+        except (AttributeError, TypeError) as err:
+            raise UserException(f"Failed to parse date {date_to_parse}, make sure the date is either in YYYY-MM-DD "
+                                f"format or relative date i.e. 5 days ago, 1 month ago, yesterday, etc.") from err
 
     def _set_dlt(self):
         # prepare the temporary directories
