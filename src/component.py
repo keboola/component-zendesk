@@ -102,8 +102,8 @@ class Component(ComponentBase):
         os.environ["SOURCES__CREDENTIALS__SUBDOMAIN"] = self.params.authentication.sub_domain
         os.environ["SOURCES__CREDENTIALS__EMAIL"] = self.params.authentication.email
         os.environ["SOURCES__CREDENTIALS__TOKEN"] = self.params.authentication.api_token
-        os.environ["EXTRACT__WORKERS"] = "40"
-        os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "100"
+        os.environ["EXTRACT__WORKERS"] = str(self.params.extract_workers)
+        os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = str(self.params.extract_max_parallel_items)
         os.environ["NORMALIZE__WORKERS"] = "40"
         os.environ["LOAD__WORKERS"] = "40"
 

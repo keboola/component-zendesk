@@ -39,6 +39,8 @@ class Configuration(BaseModel):
     destination: Destination
     available_details: AvailableDetails
     debug: bool = Field(default=False)
+    extract_workers: int = Field(default=5)
+    extract_max_parallel_items: int = Field(default=20)
 
     def __init__(self, **data):
         try:
