@@ -1,88 +1,104 @@
-keboola.ex-zendesk-v2
-=============
+# Zendesk Extractor
 
-Prerequisites
-=============
+Zendesk is a customer service platform that helps businesses manage customer interactions across multiple channels. This component enables you to extract your Zendesk data into Keboola for analysis and reporting.
 
-[How to obtain API token](https://support.zendesk.com/hc/en-us/articles/4408889192858-Generating-a-new-API-token)
+## Overview
 
-Supported endpoints
-===================
+This component enables you to extract various types of data from your Zendesk instance, including tickets, users, organizations, and custom fields. It supports both full and incremental data loading.
 
-    - /api/v2/users.json
-    - /api/v2/groups.json
-    - /api/v2/group_memberships.json
-    - /api/v2/organizations.json
-    - /api/v2/tags.json", Tags
-    - /api/v2/ticket_fields.json
-    - /api/v2/incremental/tickets.json
-    - /api/v2/tickets/{ticket['id']}/comments.json
-    - /api/v2/tickets/{ticket['id']}/audits.json
+## Features
 
-If you need more endpoints, please submit your request to
-[ideas.keboola.com](https://ideas.keboola.com/)
+- Extracts data from multiple Zendesk endpoints
+- Supports incremental loading for most tables
+- Handles authentication via API token
+- Provides detailed logging and debugging options
+- Supports extraction of ticket details (comments and audits)
 
-Configuration
-=============
+## Prerequisites
 
-### authentication
-- email
-- #api_token
-- sub_domain
+- Zendesk account with API access
+- [API token](https://support.zendesk.com/hc/en-us/articles/4408889192858-Generating-a-new-API-token)
 
-### sync options
-- Full Sync downloads all data from the source every run
-- Incremental Sync downloads data (tickets, ticket_comments and ticket_audits) by parameter start_time described <a href='https://developer.zendesk.com/api-reference/ticketing/ticket-management/incremental_exports/#per_page'>here</a>. The start time is taken from the last successful run. 
+## Supported Endpoints
 
-### destination
-#### load type
-- Full load is used, the destination table will be overwritten every run
-- incremental load is used, data will be upserted into the destination table. Tables with a primary key will have rows updated, tables without a primary key will have rows appended.
+- `/api/v2/users.json`
+- `/api/v2/groups.json`
+- `/api/v2/group_memberships.json`
+- `/api/v2/organizations.json`
+- `/api/v2/tags.json`
+- `/api/v2/ticket_fields.json`
+- `/api/v2/incremental/tickets.json`
+- `/api/v2/tickets/{ticket['id']}/comments.json`
+- `/api/v2/tickets/{ticket['id']}/audits.json`
 
-### available details
-#### Details of tickets which will be loaded also. Details are loaded per ticket. It has an impact on performance.
+> Need more endpoints? Submit your request to [ideas.keboola.com](https://ideas.keboola.com/)
+
+### Configuration
+
+#### Authentication
+```json
+{
+    "email": "your@email.com",
+    "#api_token": "your_api_token",
+    "sub_domain": "your_subdomain"
+}
+```
+
+#### Sync Options
+- **Full Sync**: Downloads all data from the source every run
+- **Incremental Sync**: Downloads data (tickets, ticket_comments, ticket_audits) based on the `start_time` parameter. The start time is taken from the last successful run.
+
+#### Destination
+- **Full Load**: Destination table is overwritten every run
+- **Incremental Load**: Data is upserted into the destination table. Tables with primary keys will have rows updated, tables without primary keys will have rows appended.
+
+#### Available Details
 - Comments
 - Audits
 
-### debug
-#### If checked, the component will output more detailed information about the run.
+> Note: Loading details has an impact on performance as they are loaded per ticket.
 
-Output
-======
+#### Debug
+Enable detailed logging for troubleshooting purposes.
 
-List of output tables is described [here](https://help.keboola.com/components/extractors/communication/zendesk/)
+## Limitations
 
-Development
------------
+- API rate limits apply (see [Zendesk API documentation](https://developer.zendesk.com/api-reference/))
 
-If required, change local data folder (the `CUSTOM_FOLDER` placeholder) path to
-your custom path in the `docker-compose.yml` file:
+## Development
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    volumes:
-      - ./:/code
-      - ./CUSTOM_FOLDER:/data
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Clone this repository, init the workspace and run the component with following
-command:
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+### Local Setup
+1. Clone the repository:
+```bash
 git clone git@github.com:keboola/component-zendesk.git keboola.ex-zendesk-v2
 cd keboola.ex-zendesk-v2
+```
+
+2. Configure local data folder in `docker-compose.yml`:
+```yaml
+volumes:
+  - ./:/code
+  - ./CUSTOM_FOLDER:/data
+```
+
+3. Build and run:
+```bash
 docker-compose build
 docker-compose run --rm dev
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
-Run the test suite and lint check using this command:
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+### Testing
+Run the test suite and lint check:
+```bash
 docker-compose run --rm test
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
-Integration
-===========
+## Integration
 
-For information about deployment and integration with KBC, please refer to the
-[deployment section of developers
-documentation](https://developers.keboola.com/extend/component/deployment/)
+For deployment and integration with KBC, refer to the [deployment documentation](https://developers.keboola.com/extend/component/deployment/).
+
+## Resources
+
+- [Zendesk API Documentation](https://developer.zendesk.com/api-reference)
+- [Keboola Documentation](https://help.keboola.com/)
+- [Component Support](https://support.keboola.com/)

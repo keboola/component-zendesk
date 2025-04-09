@@ -1,1 +1,1 @@
-New version of a Zendesk extractor built on a DLT
+Zendesk is a customer service platform that helps businesses manage customer interactions across multiple channels.
