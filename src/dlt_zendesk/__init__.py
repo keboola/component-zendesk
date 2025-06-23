@@ -27,15 +27,12 @@ def zendesk_support(start_date_iso: int, credentials: TZendeskCredentials = dlt.
 
     @dlt.resource(name="organizations_raw", parallelized=True, columns=Organizations, write_disposition="replace")
     def organizations() -> Iterator[TDataItem]:
-        dt = pendulum.from_timestamp(start_date_iso)
-        from_date = dt.format('YYYY-MM-DD')
-
         logging.info("Loading Organizations")
         user_pages = zendesk_client.get_pages(
-            "/api/v2/search.json",
-            "results",
-            PaginationType.OFFSET,
-            params={"query": f"type:organization updated>{from_date}"},
+            "/api/v2/incremental/organizations.json",
+            "organizations",
+            PaginationType.STREAM,
+            params={"start_time": start_date_iso},
         )
         yield from user_pages
 
