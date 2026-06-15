@@ -1,1 +1,1 @@
-Zendesk is a customer service platform that helps businesses manage customer interactions across multiple channels.
+Extracts tickets, users, and organizations from Zendesk.
